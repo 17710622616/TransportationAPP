@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+        <TextView
+            android:id="@+id/item_deliver_goods_material"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="5"
+            android:padding="8dp"
+            android:text="物料"
+            android:textSize="18sp"
+            android:textColor="@color/color_black"/>
+
+        <TextView
+            android:id="@+id/item_deliver_goods_send_out"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.5"
+            android:padding="8dp"
+            android:text="送出"
+            android:textSize="18sp"
+            android:textColor="@color/color_black"/>
+
+        <TextView
+            android:id="@+id/item_deliver_goods_recycle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.5"
+            android:padding="8dp"
+            android:text="回收"
+            android:textSize="18sp"
+            android:textColor="@color/color_black"/>
+</LinearLayout>

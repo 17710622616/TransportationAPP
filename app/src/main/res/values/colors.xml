@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#FF5155</color>
+    <color name="colorPrimaryDark">#FF5155</color>
+    <color name="colorAccent">#FF5155</color>
+    <color name="color_white">#ffffff</color>
+    <color name="color_light_gray">#FFFFCC</color>
+    <color name="color_black">#000000</color>
+    <color name="color_oringe">#FE9064</color>
+    <color name="colorSkyBlue">#0286FF</color>
+    <color name="colorWight">#FFFFFF</color>
+    <color name="colorMineGray">#F5F5F5</color>
+    <color name="colorCommentGray">#F4F4F4</color>
+    <color name="colorLightGray">#fdfdfd</color>
+    <color name="colorLineGray">#c9c9c9</color>
+    <color name="colorDrakGray">#707070</color>
+    <color name="colorOrderGray">#434345</color>
+    <color name="colorBlack">#000000</color>
+    <color name="colorStartBlue">#3BA9FE</color>
+    <color name="colorEndBlue">#0286FF</color>
+    <color name="colorCenterBlue">#02AAFF</color>
+    <color name="colorDeepBlue">#33618E</color>
+    <color name="colorBgYellow">#FFF1CE</color>
+    <color name="colorMineYellow">#E7AA33</color>
+    <color name="colorWayOringe">#F45428</color>
+    <color name="colorMineOringe">#E87765</color>
+    <color name="colorMineGreen">#7FC247</color>
+    <color name="colorLoginOutRed">#F32E2E</color>
+    <color name="colorNewGreen">#53EEBD</color>
+    <color name="colorAlpha">#00000000</color>
+    <color name="colorHalfAlpha">#00c9c9c9</color>
+    <color name="colorSubmitGreen">#37C972</color>
+    <color name="aplahOrenge">#88F45428</color>
+    <color name="aplahBlack">#55000000</color>
+</resources>

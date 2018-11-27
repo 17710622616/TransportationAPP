@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView
+        android:id="@+id/close_account_head"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+
+    <WebView
+        android:id="@+id/close_account_print_wv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>

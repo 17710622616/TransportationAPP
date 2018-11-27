@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView
+        android:id="@+id/material_recycling_head_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="客戶編碼："
+                    android:textColor="@color/color_black"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/material_recycling_customer_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View style="@style/underLine" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="客戶名稱："
+                    android:textColor="@color/color_black"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/material_recycling_customer_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View style="@style/underLine" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="客戶地址："
+                    android:textColor="@color/color_black"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/material_recycling_address"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View style="@style/underLine" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="聯繫電話："
+                    android:textColor="@color/color_black"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/material_recycling_tel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View style="@style/underLine" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:text="操        作："
+                android:textColor="@color/color_black"
+                android:textSize="20dp" />
+
+            <com.youcoupon.john_li.transportationapp.TMSView.NoScrollListView
+                android:id="@+id/material_recycling_lv"
+                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="0dp" />
+
+            <TextView
+                android:id="@+id/sacn_customer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="掃描客戶"
+                android:textSize="24sp"
+                android:textColor="@color/color_white"
+                android:gravity="center"
+                android:background="@color/colorPrimary"
+                android:padding="10dp"
+                android:layout_margin="15dp"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

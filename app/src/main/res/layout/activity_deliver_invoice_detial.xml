@@ -3,7 +3,12 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
     <com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView
-        android:id="@+id/invoice_detial"
+        android:id="@+id/invoice_detial_head"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
+
+    <WebView
+        android:id="@+id/invoice_detial_wv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </LinearLayout>

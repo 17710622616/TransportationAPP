@@ -20,6 +20,6 @@ public class TMSConfigor {
     // 獲取當日發票列表接口
     public final static String GET_TODAY_INVOICE_LIST = "api/Basic/GetTodayInvoiceList?";
     // 提交發票接口
-    public final static String SUBMIT_DELEIVER_INVOICE = "api/Basic/GetTodayInvoiceList?";
+    public final static String SUBMIT_DELEIVER_INVOICE = "api/Business/PostInvoice?";
 
 }

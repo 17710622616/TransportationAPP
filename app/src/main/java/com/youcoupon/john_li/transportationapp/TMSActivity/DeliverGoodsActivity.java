@@ -5,10 +5,8 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
@@ -18,7 +16,6 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,17 +28,19 @@ import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.Barcodemode;
 import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
-import com.youcoupon.john_li.transportationapp.TMSModel.TestMaterialModel;
-import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.ScanHelper;
-import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSConfigor;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xutils.common.Callback;
+import org.xutils.common.util.KeyValue;
+import org.xutils.db.sqlite.WhereBuilder;
 import org.xutils.ex.DbException;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
@@ -127,41 +126,35 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
 
     private void getData() {
         DeliverInvoiceModel model = new DeliverInvoiceModel();
-        model.setMaterialId(1);
+        model.setMaterialId("1");
         model.setMaterialName("木卡板");
-        model.setMaterialId(0);
-        model.setMaterialId(0);
+        model.setSendOutNum(0);
+        model.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model);
         DeliverInvoiceModel model1 = new DeliverInvoiceModel();
-        model1.setMaterialId(1);
+        model1.setMaterialId("1");
         model1.setMaterialName("膠卡板(大)");
-        model1.setMaterialId(0);
-        model1.setMaterialId(0);
+        model1.setSendOutNum(0);
+        model1.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model1);
         DeliverInvoiceModel model2 = new DeliverInvoiceModel();
-        model2.setMaterialId(1);
+        model2.setMaterialId("013A");
         model2.setMaterialName("膠卡板(小)");
-        model2.setMaterialId(0);
-        model2.setMaterialId(0);
+        model2.setSendOutNum(0);
+        model2.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model2);
         DeliverInvoiceModel model3 = new DeliverInvoiceModel();
-        model3.setMaterialId(1);
+        model3.setMaterialId("1");
         model3.setMaterialName("膠片(5加侖)");
-        model3.setMaterialId(0);
-        model3.setMaterialId(0);
+        model3.setSendOutNum(0);
+        model3.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model3);
         DeliverInvoiceModel model4 = new DeliverInvoiceModel();
-        model4.setMaterialId(1);
+        model4.setMaterialId("1");
         model4.setMaterialName("5加侖吉膠桶");
-        model4.setMaterialId(0);
-        model4.setMaterialId(0);
+        model4.setSendOutNum(0);
+        model4.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model4);
-        DeliverInvoiceModel model5 = new DeliverInvoiceModel();
-        model5.setMaterialId(1);
-        model5.setMaterialName("5加侖吉膠箱");
-        model5.setMaterialId(0);
-        model5.setMaterialId(0);
-        mDeliverInvoiceModelList.add(model5);
     }
 
     @RequiresApi(api = 26)
@@ -179,7 +172,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         mSubmitInvoiceInfo.setSalesmanId(TMSShareInfo.mUserModelList.get(0).getSalesmanID());
                         mSubmitInvoiceInfo.setStatus(0);
                         TMSApplication.db.save(mSubmitInvoiceInfo);
-                        callNetSubmitInvoice();
+                        //callNetSubmitInvoice(0);
+                        checkInvoiceType();
                     } catch (DbException e) {
                         e.printStackTrace();
                         Toast.makeText(DeliverGoodsActivity.this, "訂單存儲失敗，請重試！", Toast.LENGTH_SHORT).show();
@@ -191,7 +185,34 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         }
     }
 
-    private void callNetSubmitInvoice() {
+    /**
+     * 检查发票类型
+     */
+    private void checkInvoiceType() {
+        int depositNum = 0;
+        int refundNum = 0;
+        for (DeliverInvoiceModel model : mDeliverInvoiceModelList) {
+            depositNum += model.getSendOutNum();
+            refundNum += model.getRecycleNum();
+        }
+        if (depositNum > 0) {
+            invoiceResult = invoiceResult + 1;
+            submitTimes ++;
+            callNetSubmitInvoice(depositNum, refundNum, 0);
+        }
+
+        if (refundNum > 0) {
+            invoiceResult = invoiceResult + 1;
+            submitTimes ++;
+            callNetSubmitInvoice(depositNum, refundNum, 1);
+        }
+    }
+
+    /**
+     * 提交发票
+     * @param depositNum
+     */
+    private void callNetSubmitInvoice(final int depositNum, final int refundNum, final int type) {
         dialog = new ProgressDialog(this);
         dialog.setTitle("提示");
         dialog.setMessage("正在更新資料......");
@@ -200,25 +221,50 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         /*Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
         paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
-        paramsMap.put("salesmanid", TMSShareInfo.mUserModelList.get(0).getSalesmanID());
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.SUBMIT_DELEIVER_INVOICE + TMSCommonUtils.createLinkStringByGet(paramsMap));
-        params.setConnectTimeout(30 * 1000);
+        PostInvoiceModel postInvoiceModel = new PostInvoiceModel();
+        com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Header header = new PostInvoiceModel.Header();
+        header.setCustomerID(mSubmitInvoiceInfo.getCustomerID());
+        header.setReference(mSubmitInvoiceInfo.getRefrence());
+        header.setSalesmanID(TMSShareInfo.mUserModelList.get(0).getSalesmanID());
+        postInvoiceModel.setHeader(header);
+        List<PostInvoiceModel.Line> lineList = new ArrayList<>();
+        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
+            com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Line line = new PostInvoiceModel.Line();
+            line.setMerchandiseID(deliverInvoiceModel.getMaterialId());
+            if (type == 0) {
+                line.setQuantity(deliverInvoiceModel.getSendOutNum() * (-1));
+            } else {
+                line.setQuantity(deliverInvoiceModel.getRecycleNum());
+            }
+            lineList.add(line);
+        }
+        postInvoiceModel.setLine(lineList);
+        params.setAsJsonContent(true);
+        params.setBodyContent(new Gson().toJson(postInvoiceModel));
         String uri = params.getUri();
-        x.http().get(params, new Callback.CommonCallback<String>() {
+        params.setConnectTimeout(30 * 1000);
+        x.http().post(params, new Callback.CommonCallback<String>() {
             @Override
             public void onSuccess(String result) {
+                Toast.makeText(DeliverGoodsActivity.this, result, Toast.LENGTH_SHORT).show();
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
-                    try {
-                        List<CustomerInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<CustomerInfo>>() {}.getType());
-                        //用集合向child_info表中插入多条数据
-                        //db.save()方法不仅可以插入单个对象，还能插入集合
-                        TMSApplication.db.save(list);
-
-                        Toast.makeText(DeliverGoodsActivity.this, "提交發票成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
-                        Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
-                        e.printStackTrace();
+                    invoiceResult = invoiceResult - 1;
+                    if (type == 0){
+                        try {
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", "invoice_no"));
+                        } catch (DbException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        if (depositNum == 0) {
+                            try {
+                                TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", "invoice_no"));
+                            } catch (DbException e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
                 } else {
                     Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
@@ -241,14 +287,38 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
 
             @Override
             public void onFinished() {
+                try {
+                    submitTimes --;
+                    if (invoiceResult == 0) {
+                        try {
+                            Toast.makeText(DeliverGoodsActivity.this, "提交發票成功！", Toast.LENGTH_SHORT).show();
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("status",1));
+                        } catch (DbException e) {
+                            e.printStackTrace();
+                            Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
+                    if (submitTimes == 0) {
+                        dialog.dismiss();
+                        Intent intent = new Intent(DeliverGoodsActivity.this, TestPrintWebActivity.class);
+                        intent.putExtra("ReferenceNo", mSubmitInvoiceInfo.getRefrence());
+                        startActivity(intent);
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(DeliverGoodsActivity.this, e.getStackTrace().toString(), Toast.LENGTH_SHORT).show();
+                }
             }
         });*/
+
         dialog.dismiss();
         Intent intent = new Intent(DeliverGoodsActivity.this, TestPrintWebActivity.class);
         intent.putExtra("SubmitInvoiceInfo", new Gson().toJson(mSubmitInvoiceInfo));
         startActivity(intent);
     }
+
+    int invoiceResult;
+    int submitTimes;
 
     class MyCodeReciver extends BroadcastReceiver {
         @Override

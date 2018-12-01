@@ -116,7 +116,7 @@ public class LoginActivity extends BaseActivity {
         paramsMap.put("password", pwd);
         paramsMap.put("IMEI", TMSShareInfo.IMEI);
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.LOGIN_API + TMSCommonUtils.createLinkStringByGet(paramsMap));
-        params.setConnectTimeout(30 * 1000);
+        params.setConnectTimeout(10 * 1000);
         String uri = params.getUri();
         x.http().get(params, new Callback.CommonCallback<String>() {
             @Override

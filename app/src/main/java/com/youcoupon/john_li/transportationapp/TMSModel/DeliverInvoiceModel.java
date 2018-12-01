@@ -5,16 +5,16 @@ package com.youcoupon.john_li.transportationapp.TMSModel;
  */
 
 public class DeliverInvoiceModel {
-    private int materialId;
+    private String materialId;
     private String materialName;
     private int sendOutNum;
     private int recycleNum;
 
-    public int getMaterialId() {
+    public String getMaterialId() {
         return materialId;
     }
 
-    public void setMaterialId(int materialId) {
+    public void setMaterialId(String materialId) {
         this.materialId = materialId;
     }
 

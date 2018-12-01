@@ -14,6 +14,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -125,9 +126,18 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
     @Override
     public void initData() {
         headView.setLeft(this);
+        headView.setTitle("訂單審核");
+        /*List<SubmitInvoiceInfo> all = null;
+        try {
+            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("refrence", getIntent().getStringExtra("ReferenceNo"), "").findAll();
+            for (SubmitInvoiceInfo info : all) {
+                mSubmitInvoiceInfo = info;
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "訂單查詢失敗！", Toast.LENGTH_SHORT).show();
+        }*/
 
         mSubmitInvoiceInfo = new Gson().fromJson(getIntent().getStringExtra("SubmitInvoiceInfo"), SubmitInvoiceInfo.class);
-
         // 设置WebView属性，能够执行Javascript脚本
         WebSettings settings = webview.getSettings();
         settings.setJavaScriptEnabled(true);

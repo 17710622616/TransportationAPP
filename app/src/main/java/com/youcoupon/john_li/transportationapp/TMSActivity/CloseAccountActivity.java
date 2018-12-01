@@ -115,40 +115,40 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
 
     private void getData() {
         DeliverInvoiceModel model = new DeliverInvoiceModel();
-        model.setMaterialId(1);
+        model.setMaterialId("1");
         model.setMaterialName("木卡板");
-        model.setMaterialId(0);
-        model.setMaterialId(0);
+        model.setSendOutNum(0);
+        model.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model);
         DeliverInvoiceModel model1 = new DeliverInvoiceModel();
-        model1.setMaterialId(1);
+        model1.setMaterialId("1");
         model1.setMaterialName("膠卡板(大)");
-        model1.setMaterialId(0);
-        model1.setMaterialId(0);
+        model1.setSendOutNum(0);
+        model1.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model1);
         DeliverInvoiceModel model2 = new DeliverInvoiceModel();
-        model2.setMaterialId(1);
+        model2.setMaterialId("013A");
         model2.setMaterialName("膠卡板(小)");
-        model2.setMaterialId(0);
-        model2.setMaterialId(0);
+        model2.setSendOutNum(0);
+        model2.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model2);
         DeliverInvoiceModel model3 = new DeliverInvoiceModel();
-        model3.setMaterialId(1);
+        model3.setMaterialId("1");
         model3.setMaterialName("膠片(5加侖)");
-        model3.setMaterialId(0);
-        model3.setMaterialId(0);
+        model3.setSendOutNum(0);
+        model3.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model3);
         DeliverInvoiceModel model4 = new DeliverInvoiceModel();
-        model4.setMaterialId(1);
+        model4.setMaterialId("1");
         model4.setMaterialName("5加侖吉膠桶");
-        model4.setMaterialId(0);
-        model4.setMaterialId(0);
+        model4.setSendOutNum(0);
+        model4.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model4);
         DeliverInvoiceModel model5 = new DeliverInvoiceModel();
-        model5.setMaterialId(1);
+        model5.setMaterialId("1");
         model5.setMaterialName("5加侖吉膠箱");
-        model5.setMaterialId(0);
-        model5.setMaterialId(0);
+        model5.setSendOutNum(0);
+        model5.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model5);
     }
 
@@ -183,6 +183,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                             Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
                             stroageBitmap(newBitmap);
                             mPrinter.PrintBitmap(newBitmap);
+                            TMSApplication.db.delete(SubmitInvoiceInfo.class);
                         } catch (Exception e) {
                             e.printStackTrace();
                         } catch (Error error) {

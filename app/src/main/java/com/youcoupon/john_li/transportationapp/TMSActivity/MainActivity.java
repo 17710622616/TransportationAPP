@@ -289,34 +289,6 @@ public class MainActivity extends BaseActivity {
                 }
             }
         });
-
-        textView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    int reslut = mPrinter.Open();
-                    if (reslut == 0) {
-                        mPrinter.PrintLineInit(12);
-                        Bitmap bm = TMSCommonUtils.encode("12634552",220,80, MainActivity.this);
-                        if (bm != null) {
-                            mPrinter.PrintBitmap(bm);
-                        }
-                        mPrinter.PrintStringEx("12634552", 25, false, false, printer.PrintType.Centering);
-                        mPrinter.PrintStringEx("澳門工藝可口可樂飲料有限公司\n物料回收收據", 25, false, false, printer.PrintType.Centering);
-                        mPrinter.PrintStringEx("編號：12345678\n司機：XXXXXXXXXX\t經手人：XXXXXXXXXX\n客戶名稱：萬通出入口貿易行(來來21店)\n客戶編號：006804021\n回收如期：2018-05-21\n物料\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t數量 " +
-                                "\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10" +
-                                "\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10\n5L礦泉水\t\t\t\t\t\t\t\t\t\t\t\t10", 25, false, false, printer.PrintType.Left);
-                        mPrinter.PrintStringEx("\n\n客戶簽收及蓋章\t\t\t\t\t\t\t\t\t\t\n\n\n\n\n____________________________\n\n\n\n\n", 25, false, false, printer.PrintType.Right);
-                        mPrinter.PrintLineEnd();
-                        mPrinter.Close();
-                    } else {
-                        Toast.makeText(MainActivity.this, "打印机打开失败", Toast.LENGTH_LONG).show();
-                    }
-                } catch (Exception e) {
-                    Toast.makeText(MainActivity.this, "打印机打开错误", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
     }
 
     @Override
@@ -333,7 +305,7 @@ public class MainActivity extends BaseActivity {
      * 初始化菜單項
      */
     private void initMenu() {
-        menuList.add("送貨");
+        menuList.add("送/收貨");
         menuList.add("今日訂單");
         menuList.add("結算");
         menuList.add("數據更新");
@@ -537,6 +509,7 @@ public class MainActivity extends BaseActivity {
                 CommonModel model = new Gson().fromJson(result, CommonModel.class);
                 if (model.getCode() == 0) {
                     Toast.makeText(MainActivity.this, "登出成功！", Toast.LENGTH_SHORT).show();
+                    SpuUtils.put(MainActivity.this, "loginMsg", "");
                     dialog.dismiss();
                     System.exit(0);
                 } else {

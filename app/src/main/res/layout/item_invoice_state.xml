@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/item_invoice_state_rl"
+    android:layout_width="match_parent"
+    android:layout_height="100dp">
+    <TextView
+        android:id="@+id/item_invoice_state_tv"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:text="收貨"
+        android:textSize="16sp"
+        android:textColor="@color/color_white"
+        android:gravity="center"
+        android:background="@drawable/selector_btn_click"
+        android:clickable="true"/>
+</RelativeLayout>

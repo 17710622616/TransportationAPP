@@ -22,13 +22,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TMSActivity.LoginActivity" android:theme="@style/AppTheme.FullScreen"/>
-        <activity android:name=".TMSActivity.DataUpdateActivity"/>
-        <activity android:name=".TMSActivity.TestPrintWebActivity"/>
-        <activity android:name=".TMSActivity.MaterialRecyclingActivity"/>
-        <activity android:name=".TMSActivity.DeliverGoodsActivity"/>
-        <activity android:name=".TMSActivity.TodayInvoiceListActivity"/>
-        <activity android:name=".TMSActivity.CloseAccountActivity"/>
+        <activity android:name=".TMSActivity.LoginActivity" android:theme="@style/AppTheme.FullScreen" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.DataUpdateActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.TestPrintWebActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.MaterialRecyclingActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.DeliverGoodsActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.TodayInvoiceListActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.CloseAccountActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.DeleverInvoiceDetialActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.InvoiceStateActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.InvoiceStateFailActivity" android:screenOrientation="portrait"/>
+
+
+        <service android:name=".TMSActivity.SubmitFailIntentService"/>
+        <service android:name=".TMSActivity.SubmitFailIntentStateService"/>
     </application>
 
 </manifest>

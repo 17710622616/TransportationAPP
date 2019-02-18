@@ -4,12 +4,14 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.BaseAdapter;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.youcoupon.john_li.transportationapp.R;
-import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 
 import java.util.List;
@@ -18,12 +20,13 @@ import java.util.List;
  * Created by John_Li on 20/7/2018.
  */
 
-public class MainAdapter extends BaseAdapter {
+public class InvoiceStateAdapter extends BaseAdapter {
+    private GridView gv;
         private List<String> list;
         private LayoutInflater inflater;
         private Context mContext;
 
-        public MainAdapter(Context context, List<String> photoList) {
+        public InvoiceStateAdapter(Context context, List<String> photoList) {
             this.list = photoList;
             inflater = LayoutInflater.from(context);
             mContext = context;
@@ -46,33 +49,21 @@ public class MainAdapter extends BaseAdapter {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             View convertView = view;
-            MainAdapter.ViewHolder holder = null;
+            InvoiceStateAdapter.ViewHolder holder = null;
             if (convertView == null) {
-                holder = new MainAdapter.ViewHolder();
-                convertView = inflater.inflate(R.layout.item_main_menu, null);
-                holder.text = convertView.findViewById(R.id.item_main_tv);
-                holder.warmingIv = convertView.findViewById(R.id.item_main_warming_iv);
+                holder = new InvoiceStateAdapter.ViewHolder();
+                convertView = inflater.inflate(R.layout.item_invoice_state, null);
+                holder.text = convertView.findViewById(R.id.item_invoice_state_tv);
                 convertView.setTag(holder);
             } else {
-                holder = (MainAdapter.ViewHolder) convertView.getTag();
+                holder = (InvoiceStateAdapter.ViewHolder) convertView.getTag();
             }
 
             holder.text.setText(list.get(i));
-            if (i == 5) {
-                if (TMSCommonUtils.getUserFor40(mContext).isInvoiceTbStatus() && TMSCommonUtils.getUserFor40(mContext).isCustomerTbStatus()) {
-                    holder.warmingIv.setVisibility(View.GONE);
-                } else {
-                    holder.warmingIv.setVisibility(View.VISIBLE);
-                }
-            } else {
-                holder.warmingIv.setVisibility(View.GONE);
-            }
             return convertView;
         }
 
     class ViewHolder {
         private TextView text;
-        private ImageView warmingIv;
     }
-
 }

@@ -24,12 +24,16 @@ import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSAdapter.DeliverGoodsAdapter;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CustomerInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialNumberInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.Barcodemode;
 import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.ScanHelper;
+import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSConfigor;
@@ -106,7 +110,6 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         ScanHelper.setScanSwitchLeft(DeliverGoodsActivity.this, true);
         ScanHelper.setScanSwitchRight(DeliverGoodsActivity.this, true);
         ScanHelper.setBarcodeReceiveModel(DeliverGoodsActivity.this, 2);
-
     }
 
     @Override
@@ -138,8 +141,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         model1.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model1);
         DeliverInvoiceModel model2 = new DeliverInvoiceModel();
-        model2.setMaterialId("013A");
-        model2.setMaterialName("膠卡板(小)");
+        model2.setMaterialId("013D");
+        model2.setMaterialName("專用膠卡板");
         model2.setSendOutNum(0);
         model2.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model2);
@@ -168,9 +171,13 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 if (mDeliverInvoiceModelList.get(2).getSendOutNum() > 0 || mDeliverInvoiceModelList.get(2).getRecycleNum() > 0) {
                     try {
                         mSubmitInvoiceInfo.setOrderBody(new Gson().toJson(mDeliverInvoiceModelList));
-                        mSubmitInvoiceInfo.setRefrence("863907040024533" + "-" + new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()));
-                        mSubmitInvoiceInfo.setSalesmanId(TMSShareInfo.mUserModelList.get(0).getSalesmanID());
-                        mSubmitInvoiceInfo.setStatus(0);
+                        String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                        time = time.replace(":","");
+                        time = time.replace(" ","");
+                        mSubmitInvoiceInfo.setRefrence("863907040024533" + time);
+                        mSubmitInvoiceInfo.setSalesmanId(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+                        mSubmitInvoiceInfo.setDepositStatus(0);
+                        mSubmitInvoiceInfo.setRefundStatus(0);
                         TMSApplication.db.save(mSubmitInvoiceInfo);
                         //callNetSubmitInvoice(0);
                         checkInvoiceType();
@@ -195,16 +202,59 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             depositNum += model.getSendOutNum();
             refundNum += model.getRecycleNum();
         }
-        if (depositNum > 0) {
-            invoiceResult = invoiceResult + 1;
-            submitTimes ++;
-            callNetSubmitInvoice(depositNum, refundNum, 0);
-        }
 
         if (refundNum > 0) {
             invoiceResult = invoiceResult + 1;
             submitTimes ++;
+            try {
+                MaterialNumberInfo first = TMSApplication.db.findFirst(MaterialNumberInfo.class);
+                if (first != null) {
+                    first.setMaterialRefundNum(first.getMaterialRefundNum() + refundNum);
+                    TMSApplication.db.saveOrUpdate(first);
+                } else {
+                    MaterialNumberInfo materialNumberInfo = new MaterialNumberInfo();
+                    materialNumberInfo.setId(1);
+                    materialNumberInfo.setMaterialName("專用膠卡板");
+                    materialNumberInfo.setMaterialRefundNum(refundNum);
+                    TMSApplication.db.save(materialNumberInfo);
+                }
+            } catch (DbException e) {
+                e.printStackTrace();
+            }
             callNetSubmitInvoice(depositNum, refundNum, 1);
+        } else {
+            try {
+                TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
+            } catch (DbException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (depositNum > 0) {
+            invoiceResult = invoiceResult + 1;
+            submitTimes ++;
+            try {
+                MaterialNumberInfo first = TMSApplication.db.findFirst(MaterialNumberInfo.class);
+                if (first != null) {
+                    first.setMaterialDepositeNum(first.getMaterialDepositeNum() + depositNum);
+                    TMSApplication.db.saveOrUpdate(first);
+                } else {
+                    MaterialNumberInfo materialNumberInfo = new MaterialNumberInfo();
+                    materialNumberInfo.setId(1);
+                    materialNumberInfo.setMaterialName("專用膠卡板");
+                    materialNumberInfo.setMaterialDepositeNum(depositNum);
+                    TMSApplication.db.save(materialNumberInfo);
+                }
+            } catch (DbException e) {
+                e.printStackTrace();
+            }
+            callNetSubmitInvoice(depositNum, refundNum, 0);
+        } else {
+            try {
+                TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
+            } catch (DbException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -218,61 +268,97 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         dialog.setMessage("正在更新資料......");
         dialog.setCancelable(false);
         dialog.show();
-        /*Map<String, String> paramsMap = new HashMap<>();
-        paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
-        paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
+        paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.SUBMIT_DELEIVER_INVOICE + TMSCommonUtils.createLinkStringByGet(paramsMap));
         PostInvoiceModel postInvoiceModel = new PostInvoiceModel();
         com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Header header = new PostInvoiceModel.Header();
         header.setCustomerID(mSubmitInvoiceInfo.getCustomerID());
         header.setReference(mSubmitInvoiceInfo.getRefrence());
-        header.setSalesmanID(TMSShareInfo.mUserModelList.get(0).getSalesmanID());
+        header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
         postInvoiceModel.setHeader(header);
         List<PostInvoiceModel.Line> lineList = new ArrayList<>();
         for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
             com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Line line = new PostInvoiceModel.Line();
             line.setMerchandiseID(deliverInvoiceModel.getMaterialId());
-            if (type == 0) {
-                line.setQuantity(deliverInvoiceModel.getSendOutNum() * (-1));
-            } else {
-                line.setQuantity(deliverInvoiceModel.getRecycleNum());
+            if (deliverInvoiceModel.getSendOutNum() != 0 || deliverInvoiceModel.getRecycleNum() != 0) {
+                if (type == 0) {
+                    line.setQuantity(deliverInvoiceModel.getSendOutNum());
+                } else {
+                    line.setQuantity(deliverInvoiceModel.getRecycleNum() * (-1));
+                }
+                lineList.add(line);
             }
-            lineList.add(line);
         }
         postInvoiceModel.setLine(lineList);
         params.setAsJsonContent(true);
-        params.setBodyContent(new Gson().toJson(postInvoiceModel));
-        String uri = params.getUri();
-        params.setConnectTimeout(30 * 1000);
+        String body = new Gson().toJson(postInvoiceModel);
+        params.setBodyContent(body);
+        params.setConnectTimeout(10 * 1000);
         x.http().post(params, new Callback.CommonCallback<String>() {
             @Override
             public void onSuccess(String result) {
-                Toast.makeText(DeliverGoodsActivity.this, result, Toast.LENGTH_SHORT).show();
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
+                    String orderNo = TMSCommonUtils.decode(commonModel.getData());
+
                     invoiceResult = invoiceResult - 1;
-                    if (type == 0){
+                    if (type == 0) {
                         try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", "invoice_no"));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo));
+                        } catch (DbException e) {
+                            e.printStackTrace();
+                        }
+
+
+                        try {
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
                         } catch (DbException e) {
                             e.printStackTrace();
                         }
                     } else {
                         if (depositNum == 0) {
                             try {
-                                TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", "invoice_no"));
+                                TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo));
                             } catch (DbException e) {
                                 e.printStackTrace();
                             }
                         }
+
+
+                        try {
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
+                        } catch (DbException e) {
+                            e.printStackTrace();
+                        }
                     }
                 } else {
-                    Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
+                    String data = TMSCommonUtils.decode(commonModel.getData());
+                    if (type == 0) {
+                        try {
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 2));
+                        } catch (DbException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        try {
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 2));
+                        } catch (DbException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！" + data, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onError(Throwable ex, boolean isOnCallback) {
+                try {
+                    TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("status", 2));
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
                 if (ex instanceof java.net.SocketTimeoutException) {
                     Toast.makeText(DeliverGoodsActivity.this, "提交發票網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
                 } else {
@@ -289,32 +375,28 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             public void onFinished() {
                 try {
                     submitTimes --;
-                    if (invoiceResult == 0) {
-                        try {
-                            Toast.makeText(DeliverGoodsActivity.this, "提交發票成功！", Toast.LENGTH_SHORT).show();
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("status",1));
-                        } catch (DbException e) {
-                            e.printStackTrace();
-                            Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
-                        }
-                    }
 
                     if (submitTimes == 0) {
-                        dialog.dismiss();
                         Intent intent = new Intent(DeliverGoodsActivity.this, TestPrintWebActivity.class);
                         intent.putExtra("ReferenceNo", mSubmitInvoiceInfo.getRefrence());
-                        startActivity(intent);
+                        startActivityForResult(intent, 1);
                     }
+                    dialog.dismiss();
                 } catch (Exception e) {
                     Toast.makeText(DeliverGoodsActivity.this, e.getStackTrace().toString(), Toast.LENGTH_SHORT).show();
                 }
             }
-        });*/
+        });
+    }
 
-        dialog.dismiss();
-        Intent intent = new Intent(DeliverGoodsActivity.this, TestPrintWebActivity.class);
-        intent.putExtra("SubmitInvoiceInfo", new Gson().toJson(mSubmitInvoiceInfo));
-        startActivity(intent);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            if (requestCode == 1) {
+                finish();
+            }
+        }
     }
 
     int invoiceResult;
@@ -329,7 +411,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     Barcodemode code = new Barcodemode();
                     code.setBarcode(str);
                     code.setNumber("");
-                    IshavaCode(code, 1);
+                    IshavaInvoiceCode(code);
                 }
             }
         }
@@ -338,22 +420,121 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
     /**
      * 有brcode
      * @param code
-     * @param i
      */
-    private void IshavaCode(Barcodemode code, int i) {
-        Toast.makeText(DeliverGoodsActivity.this, "扫描到code" + code.getBarcode(), Toast.LENGTH_SHORT).show();
+    private void IshavaInvoiceCode(Barcodemode code) {
+        //添加查询条件进行查询
+        List<InvoiceInfo> all = null;
+        try {
+            all = TMSApplication.db.selector(InvoiceInfo.class).where("invoice_no","=", code.getBarcode().substring(0, code.getBarcode().length() - 1)).findAll();
+            InvoiceInfo invoiceInfo = null;
+            if (all != null) {
+                for(InvoiceInfo info : all){
+                    invoiceInfo = info;
+                }
+            }
+
+            if (invoiceInfo != null) {
+                CustomerInfo customerInfo = null;
+                List<CustomerInfo> customerInfoList = TMSApplication.db.selector(CustomerInfo.class).where("customer_id","=",invoiceInfo.getCustomerID()).findAll();
+                for(CustomerInfo customerInfo1 : customerInfoList){
+                    customerInfo = customerInfo1;
+                }
+
+                if (customerInfo != null) {
+                    mSubmitInvoiceInfo.setCustomerID(customerInfo.getCustomerID());
+                    mSubmitInvoiceInfo.setCustomerName(customerInfo.getCustomerName());
+                    delivergoods_customer_no.setText(customerInfo.getCustomerID());
+                    delivergoods_customer_name.setText(customerInfo.getCustomerName());
+                    delivergoods_customer_address.setText(customerInfo.getCustomerAddress());
+                    delivergoods_tel.setText(customerInfo.getTelephone());
+                    headView.setRightText("提交", this);
+                    mLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
+                            if (position == 2) {
+                                final AlertDialog.Builder dialog1 = new AlertDialog.Builder(DeliverGoodsActivity.this);
+                                dialog1.setCancelable(false);
+                                LayoutInflater inflater = LayoutInflater.from(DeliverGoodsActivity.this);
+                                View view1 = inflater.inflate(R.layout.dialog_deliver_goods, null);
+                                dialog1.setView(view1);//设置使用View
+                                //设置控件应该用v1.findViewById 否则出错
+                                TextView name = view1.findViewById(R.id.dialog_dg_material_name);
+                                final EditText numEt = view1.findViewById(R.id.dialog_dg_num_et);
+                                TextView submit = view1.findViewById(R.id.dialog_dg_submit_tv);
+                                TextView cancel = view1.findViewById(R.id.dialog_dg_cancel_tv);
+                                final RadioButton rb1 = view1.findViewById(R.id.dialog_dg_send_out_rb);
+                                final RadioButton rb2 = view1.findViewById(R.id.dialog_dg_recycle_rb);
+
+                                final Dialog d = dialog1.create();
+                                name.setText(mDeliverInvoiceModelList.get(position).getMaterialName());
+                                submit.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        try {
+                                            if (!numEt.getText().equals("")) {
+                                                if ((rb1.isChecked() || rb2.isChecked() ) && !(rb1.isChecked() && rb2.isChecked())) {
+                                                    if (rb1.isChecked()) {
+                                                        mDeliverInvoiceModelList.get(position).setSendOutNum(Integer.parseInt(numEt.getText().toString()));
+                                                    } else if (rb2.isChecked()) {
+                                                        mDeliverInvoiceModelList.get(position).setRecycleNum(Integer.parseInt(numEt.getText().toString()));
+                                                    }
+                                                    mDeliverGoodsAdapter.notifyDataSetChanged();
+                                                    d.dismiss();
+                                                } else {
+                                                    Toast.makeText(DeliverGoodsActivity.this, "請選擇送出或回收", Toast.LENGTH_SHORT).show();
+                                                }
+                                            } else {
+                                                Toast.makeText(DeliverGoodsActivity.this, "請輸入數量", Toast.LENGTH_SHORT).show();
+                                            }
+                                        } catch (Exception e) {
+                                            Toast.makeText(DeliverGoodsActivity.this, "請輸入數量", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                });
+                                cancel.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        d.dismiss();
+                                    }
+                                });
+                                d.show();
+                            }
+                        }
+                    });
+                } else {
+                    Toast.makeText(DeliverGoodsActivity.this, "未找到該該發票對應的客戶！", Toast.LENGTH_SHORT).show();
+                    IshavaCustomerCode(code);
+                }
+            } else {
+                Toast.makeText(DeliverGoodsActivity.this, "未找到該該發票！", Toast.LENGTH_SHORT).show();
+                IshavaCustomerCode(code);
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+            Toast.makeText(DeliverGoodsActivity.this, "查找發票錯誤！", Toast.LENGTH_SHORT).show();
+            IshavaCustomerCode(code);
+        }
+    }
+
+    /**
+     * 有brcode
+     * @param code
+     */
+    private void IshavaCustomerCode(Barcodemode code) {
         //添加查询条件进行查询
         List<CustomerInfo> all = null;
         try {
             all = TMSApplication.db.selector(CustomerInfo.class).where("customer_id","=", code.getBarcode()).findAll();
             CustomerInfo customerInfo = null;
-            for(CustomerInfo info :all){
-                customerInfo = info;
+            if (all != null) {
+                for(CustomerInfo info :all){
+                    customerInfo = info;
+                }
             }
 
             if (customerInfo != null) {
                 mSubmitInvoiceInfo.setCustomerID(customerInfo.getCustomerID());
-                mSubmitInvoiceInfo.setCustomerID(customerInfo.getCustomerName());
+                mSubmitInvoiceInfo.setCustomerName(customerInfo.getCustomerName());
                 delivergoods_customer_no.setText(customerInfo.getCustomerID());
                 delivergoods_customer_name.setText(customerInfo.getCustomerName());
                 delivergoods_customer_address.setText(customerInfo.getCustomerAddress());

@@ -79,9 +79,31 @@ public class LoginActivity extends BaseActivity {
         String crop = cropEt.getText().toString();
         String userName = userNameEt.getText().toString();
         String pwd = pwdEt.getText().toString();
+        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         if (crop != null && userName != null && pwd != null) {
             if (!crop.equals("") && !userName.equals("") && !pwd.equals("")) {
-                doLogin(crop, userName, pwd);
+                if (userModelList != null) {
+                    if (userModelList.size() > 0) {
+                        // 判斷是否和已登錄賬戶公司相同
+                        boolean b = true;
+                        for (int i = 0; i < userModelList.size(); i++) {
+                            if (userModelList.get(i).getCorp().equals(crop)) {
+                                b = false;
+                            }
+                        }
+
+                        if (b) {
+                            doLogin(crop, userName, pwd);
+                        } else {
+                            progressLL.setVisibility(View.GONE);
+                            Toast.makeText(this, "同一公司的賬號不能重複登錄系統！", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        doLogin(crop, userName, pwd);
+                    }
+                } else {
+                    doLogin(crop, userName, pwd);
+                }
             } else {
                 progressLL.setVisibility(View.GONE);
                 Toast.makeText(this, "請填寫全登錄信息！", Toast.LENGTH_SHORT).show();
@@ -136,19 +158,19 @@ public class LoginActivity extends BaseActivity {
 
                         if (!b) {
                             model.setLoginTime(TMSCommonUtils.getTimeToday());
-                            mUserModelList.add(model);
-                            TMSShareInfo.mUserModelList.add(model);
+                            mUserModelList.add(0,model);
+                            TMSShareInfo.mUserModelList.add(0,model);
                         } else {
                             model.setLoginTime(TMSCommonUtils.getTimeToday());
-                            mUserModelList.add(model);
-                            TMSShareInfo.mUserModelList.add(model);
+                            mUserModelList.add(0,model);
+                            TMSShareInfo.mUserModelList.add(0,model);
                         }
                         SpuUtils.put(LoginActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
                     } else {
                         List<UserModel> mUserModelList = new ArrayList<UserModel>();
                         model.setLoginTime(TMSCommonUtils.getTimeToday());
-                        mUserModelList.add(model);
-                        TMSShareInfo.mUserModelList.add(model);
+                        mUserModelList.add(0,model);
+                        TMSShareInfo.mUserModelList.add(0,model);
                         SpuUtils.put(LoginActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
                     }
                     progressLL.setVisibility(View.GONE);

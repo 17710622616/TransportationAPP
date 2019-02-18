@@ -19,13 +19,17 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CustomerInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialNumberInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.ToHtml;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
+import org.xutils.common.util.KeyValue;
+import org.xutils.db.sqlite.WhereBuilder;
 import org.xutils.ex.DbException;
 
 import java.io.BufferedOutputStream;
@@ -108,8 +112,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
             e.printStackTrace();
         }
 
-        Bitmap bm = TMSCommonUtils.creatBarcode(CloseAccountActivity.this, "12634552",160,60, false);
-        url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
+        url = "file:///" + testCreateHTML();// 载入本地生成的页面
         webview.loadUrl(url);
     }
 
@@ -127,8 +130,8 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
         model1.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model1);
         DeliverInvoiceModel model2 = new DeliverInvoiceModel();
-        model2.setMaterialId("013A");
-        model2.setMaterialName("膠卡板(小)");
+        model2.setMaterialId("013D");
+        model2.setMaterialName("專用膠卡板");
         model2.setSendOutNum(0);
         model2.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model2);
@@ -183,7 +186,6 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                             Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
                             stroageBitmap(newBitmap);
                             mPrinter.PrintBitmap(newBitmap);
-                            TMSApplication.db.delete(SubmitInvoiceInfo.class);
                         } catch (Exception e) {
                             e.printStackTrace();
                         } catch (Error error) {
@@ -191,10 +193,23 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                         }
                     }
                 });
+
+                try {
+                    MaterialNumberInfo first = TMSApplication.db.findFirst(MaterialNumberInfo.class);
+                    first.setMaterialDepositeNum(0);
+                    first.setMaterialRefundNum(0);
+                    TMSApplication.db.saveOrUpdate(first);
+
+                    TrainsInfo first1 = TMSApplication.db.findFirst(TrainsInfo.class);
+                    first1.setTrainsTimes(first1.getTrainsTimes() + 1);
+                    TMSApplication.db.saveOrUpdate(first1);
+                    finish();
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
                 break;
         }
     }
-
 
     public class OnTouchListenerHTML5 implements View.OnTouchListener {
 
@@ -216,19 +231,18 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
 
     }
 
-    public String testCreateHTML(String barCodeImagePath) {
+    public String testCreateHTML() {
         try {
-            List<SubmitInvoiceInfo> all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
-            for (SubmitInvoiceInfo info : all) {
-                List<DeliverInvoiceModel> cachedeliverInvoiceModelList = new Gson().fromJson(info.getOrderBody(), new TypeToken<List<DeliverInvoiceModel>>() {}.getType());
-                mDeliverInvoiceModelList.get(2).setSendOutNum(mDeliverInvoiceModelList.get(2).getSendOutNum() + cachedeliverInvoiceModelList.get(2).getSendOutNum());
-                mDeliverInvoiceModelList.get(2).setRecycleNum(mDeliverInvoiceModelList.get(2).getRecycleNum() + cachedeliverInvoiceModelList.get(2).getRecycleNum());
-            }
+            MaterialNumberInfo info = TMSApplication.db.findFirst(MaterialNumberInfo.class);
+            int deposit = info.getMaterialDepositeNum();
+            int refund = info.getMaterialRefundNum();
+            mDeliverInvoiceModelList.get(2).setSendOutNum(deposit);
+            mDeliverInvoiceModelList.get(2).setRecycleNum(refund);
         } catch (Exception e) {
 
         }
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
-        ToHtml.convertCloseccount(mDeliverInvoiceModelList, path);
+        ToHtml.convertCloseccount(mDeliverInvoiceModelList, path, this);
         return path;
     }
 

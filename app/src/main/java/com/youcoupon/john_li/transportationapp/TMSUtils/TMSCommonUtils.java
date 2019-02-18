@@ -28,11 +28,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.youcoupon.john_li.transportationapp.TMSActivity.LoginActivity;
+import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
 
 import org.xutils.common.Callback;
 import org.xutils.common.task.PriorityExecutor;
@@ -131,6 +133,36 @@ public class TMSCommonUtils {
         }
 
         return ruseltBitmap;
+    }
+
+    public static UserModel getUserFor40 (Context context) {
+        UserModel userModel = null;
+        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        for (UserModel model : userModelList) {
+            if (model.getCorp().equals("40")) {
+                userModel = model;
+            }
+        }
+        return userModel;
+    }
+
+    /**
+     * 生成EAN-8 验证码
+     */
+    public static String ean8(String code) {
+        // code = "692223361219"
+        // 012345678901
+        int c1 = 0;
+        int c2 = 0;
+        for (int i = 0; i <= 6; i += 2) { // i=0,2,4,6,..
+            c1 += (code.charAt(i) - '0');
+            if (i != 6) {
+                c2 += (code.charAt(i + 1) - '0');
+            }
+        }
+        int c = (c1 + c2 * 3) % 10;
+        int cc = (10 - c);
+        return code + cc;
     }
 
     /**
@@ -251,6 +283,16 @@ public class TMSCommonUtils {
     public static String getTimeToday() {
         Date now = new Date();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return dateFormat.format(now);
+    }
+
+    /**
+     * 獲取今日時間
+     * @return
+     */
+    public static String getTimeNow() {
+        Date now = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return dateFormat.format(now);
     }
 
@@ -685,5 +727,18 @@ public class TMSCommonUtils {
             }});
 
         m_progressDlg.show();
+    }
+
+    /**
+     * 根据公司获取用户信息
+     */
+    public static UserModel getUserInfoByCorp(Context context, String corp) {
+        UserModel userModel = null;
+        List<UserModel> list = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        for (UserModel model : list) {
+            userModel = model;
+        }
+
+        return userModel;
     }
 }

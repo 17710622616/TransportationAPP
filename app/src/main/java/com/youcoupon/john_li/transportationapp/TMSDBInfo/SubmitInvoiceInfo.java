@@ -22,23 +22,27 @@ public class SubmitInvoiceInfo {
     private int id;
     @Column(name = "customer_id")
     private String CustomerID;
+    @Column(name = "customer_name")
+    private String CustomerName;
     @Column(name = "invoice_no")
     private String InvoiceNo;
-    @Column(name = "refrence")
-    private String Refrence;
     @Column(name = "salesman_id")
     private String SalesmanId;
     @Column(name = "order_body")
     private String OrderBody;
-    @Column(name = "status")
-    private int status;
+    @Column(name = "depositStatus")
+    private int depositStatus;
+    @Column(name = "refundStatus")
+    private int refundStatus;
+    @Column(name = "refrence")
+    private String Refrence;
 
-    public int getStatus() {
-        return status;
+    public String getCustomerName() {
+        return CustomerName;
     }
 
-    public void setStatus(int status) {
-        this.status = status;
+    public void setCustomerName(String customerName) {
+        CustomerName = customerName;
     }
 
     public int getId() {
@@ -47,6 +51,22 @@ public class SubmitInvoiceInfo {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int getDepositStatus() {
+        return depositStatus;
+    }
+
+    public void setDepositStatus(int depositStatus) {
+        this.depositStatus = depositStatus;
+    }
+
+    public int getRefundStatus() {
+        return refundStatus;
+    }
+
+    public void setRefundStatus(int refundStatus) {
+        this.refundStatus = refundStatus;
     }
 
     public String getCustomerID() {

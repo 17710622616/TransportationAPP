@@ -127,38 +127,43 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
     public void initData() {
         headView.setLeft(this);
         headView.setTitle("訂單審核");
-        /*List<SubmitInvoiceInfo> all = null;
+        List<SubmitInvoiceInfo> all = null;
         try {
-            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("refrence", getIntent().getStringExtra("ReferenceNo"), "").findAll();
+            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
             for (SubmitInvoiceInfo info : all) {
+                if (info.getRefrence().equals(getIntent().getStringExtra("ReferenceNo")))
                 mSubmitInvoiceInfo = info;
             }
+
+            //mSubmitInvoiceInfo = new Gson().fromJson(getIntent().getStringExtra("SubmitInvoiceInfo"), SubmitInvoiceInfo.class);
+            // 设置WebView属性，能够执行Javascript脚本
+            WebSettings settings = webview.getSettings();
+            settings.setJavaScriptEnabled(true);
+            settings.setPluginState(WebSettings.PluginState.ON);
+            //settings.setPluginsEnabled(true);
+            webview.setWebViewClient(new MvtFlashWebViewClient());
+            // 截图用
+            webview.setDrawingCacheEnabled(true);
+            // 自适应屏幕大小
+
+            settings.setLoadWithOverviewMode(true);
+
+            try {
+                mPrinter.Open();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (mSubmitInvoiceInfo.getInvoiceNo() != null) {
+                Bitmap bm = TMSCommonUtils.creatBarcode(TestPrintWebActivity.this, TMSCommonUtils.ean8(mSubmitInvoiceInfo.getInvoiceNo()),160,60, false);
+                url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
+            } else {
+                url = "file:///" + testCreateHTML("");// 载入本地生成的页面
+            }
+            webview.loadUrl(url);
         } catch (Exception e) {
             Toast.makeText(this, "訂單查詢失敗！", Toast.LENGTH_SHORT).show();
-        }*/
-
-        mSubmitInvoiceInfo = new Gson().fromJson(getIntent().getStringExtra("SubmitInvoiceInfo"), SubmitInvoiceInfo.class);
-        // 设置WebView属性，能够执行Javascript脚本
-        WebSettings settings = webview.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setPluginState(WebSettings.PluginState.ON);
-        //settings.setPluginsEnabled(true);
-        webview.setWebViewClient(new MvtFlashWebViewClient());
-        // 截图用
-        webview.setDrawingCacheEnabled(true);
-        // 自适应屏幕大小
-
-        settings.setLoadWithOverviewMode(true);
-
-        try {
-            mPrinter.Open();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-
-        Bitmap bm = TMSCommonUtils.creatBarcode(TestPrintWebActivity.this, "12634552",160,60, false);
-        url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
-        webview.loadUrl(url);
     }
 
     public class OnTouchListenerHTML5 implements View.OnTouchListener {
@@ -193,12 +198,8 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
         } catch (DbException e) {
             e.printStackTrace();
         }
-        /*list.toArray();
-        String name[] = { "膠卡板(小)"};//
-        int sendOut[] = {mDeliverInvoiceModelList.get(0).getSendOutNum()};
-        int recycle[] = {mDeliverInvoiceModelList.get(0).getRecycleNum()};*/
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
-        ToHtml.convert("",mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), customerName, path, mDeliverInvoiceModelList, barCodeImagePath);
+        ToHtml.convert(mSubmitInvoiceInfo.getInvoiceNo(),mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this);
         return path;
     }
 
@@ -257,6 +258,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
     public void onClick(View v) {
         // TODO Auto-generated method stub
         if(v.getId()==R.id.head_right_tv){
+            setResult(RESULT_OK);
             finish();
         } else if (v.getId() == R.id.head_left){
             finish();

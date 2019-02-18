@@ -76,29 +76,33 @@ public class DeleverInvoiceDetialActivity extends BaseActivity implements View.O
         headView.setTitle("訂單詳情");
         List<SubmitInvoiceInfo> all = null;
         try {
-            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("refrence", getIntent().getStringExtra("ReferenceNo"), "").findAll();
+            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
             for (SubmitInvoiceInfo info : all) {
-                mSubmitInvoiceInfo = info;
+                if (info.getRefrence().equals(getIntent().getStringExtra("ReferenceNo")))
+                    mSubmitInvoiceInfo = info;
             }
+
+            // 设置WebView属性，能够执行Javascript脚本
+            WebSettings settings = webview.getSettings();
+            settings.setJavaScriptEnabled(true);
+            settings.setPluginState(WebSettings.PluginState.ON);
+            //settings.setPluginsEnabled(true);
+            webview.setWebViewClient(new DeleverInvoiceDetialActivity.MvtFlashWebViewClient());
+            // 截图用
+            webview.setDrawingCacheEnabled(true);
+            // 自适应屏幕大小
+            settings.setLoadWithOverviewMode(true);
+
+            if (mSubmitInvoiceInfo.getInvoiceNo() != null) {
+                Bitmap bm = TMSCommonUtils.creatBarcode(DeleverInvoiceDetialActivity.this, mSubmitInvoiceInfo.getInvoiceNo(),160,60, false);
+                url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
+            } else {
+                url = "file:///" + testCreateHTML("");// 载入本地生成的页面
+            }
+            webview.loadUrl(url);
         } catch (Exception e) {
             Toast.makeText(this, "訂單查詢失敗！", Toast.LENGTH_SHORT).show();
         }
-
-        // 设置WebView属性，能够执行Javascript脚本
-        WebSettings settings = webview.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setPluginState(WebSettings.PluginState.ON);
-        //settings.setPluginsEnabled(true);
-        webview.setWebViewClient(new DeleverInvoiceDetialActivity.MvtFlashWebViewClient());
-        // 截图用
-        webview.setDrawingCacheEnabled(true);
-        // 自适应屏幕大小
-
-        settings.setLoadWithOverviewMode(true);
-
-        Bitmap bm = TMSCommonUtils.creatBarcode(DeleverInvoiceDetialActivity.this, "12634552",160,60, false);
-        url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
-        webview.loadUrl(url);
     }
 
 
@@ -135,12 +139,8 @@ public class DeleverInvoiceDetialActivity extends BaseActivity implements View.O
         } catch (DbException e) {
             e.printStackTrace();
         }
-        /*list.toArray();
-        String name[] = { "膠卡板(小)"};//
-        int sendOut[] = {mDeliverInvoiceModelList.get(0).getSendOutNum()};
-        int recycle[] = {mDeliverInvoiceModelList.get(0).getRecycleNum()};*/
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
-        ToHtml.convert("",mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), customerName, path, mDeliverInvoiceModelList, barCodeImagePath);
+        ToHtml.convert(mSubmitInvoiceInfo.getInvoiceNo(),mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this);
         return path;
     }
 }

@@ -6,9 +6,9 @@ package com.youcoupon.john_li.transportationapp.TMSUtils;
 
 public class TMSConfigor {
     // 測試url
-    //public final static String BASE_URL = "http://202.100.100.151/";
+    public final static String BASE_URL = "http://202.100.100.151/";
     // 正式url
-    public final static String BASE_URL = "http://psamaterial.moccb.com/";
+    //public final static String BASE_URL = "http://psamaterial.moccb.com/";
     // 登錄接口
     public final static String LOGIN_API = "api/Tools/CheckUser?";
     // 登出接口
@@ -25,5 +25,7 @@ public class TMSConfigor {
     public final static String SUBMIT_DELEIVER_INVOICE = "api/Business/PostInvoice?";
     // 提交發票状态接口
     public final static String SUBMIT_INVOICE_STATE = "api/Business/PostInvoiceStatistic?";
+    // 提交物料结算接口
+    public final static String SUBMIT_MATERIALS_SETTLEMENT = "api/Business/PostStockMovement?";
 
 }

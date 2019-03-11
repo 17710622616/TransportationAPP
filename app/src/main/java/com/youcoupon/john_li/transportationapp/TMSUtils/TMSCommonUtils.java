@@ -34,10 +34,12 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.youcoupon.john_li.transportationapp.TMSActivity.LoginActivity;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
 
 import org.xutils.common.Callback;
 import org.xutils.common.task.PriorityExecutor;
+import org.xutils.ex.DbException;
 import org.xutils.http.HttpMethod;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
@@ -139,7 +141,7 @@ public class TMSCommonUtils {
         UserModel userModel = null;
         List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         for (UserModel model : userModelList) {
-            if (model.getCorp().equals("40")) {
+            if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
                 userModel = model;
             }
         }
@@ -274,6 +276,22 @@ public class TMSCommonUtils {
             e.printStackTrace();
         }
         return path;
+    }
+
+    public static int searchTrainsInfoMaxTimes() {
+        int times = 0;
+        try {
+            List<TrainsInfo> list = new ArrayList<>();
+            list.addAll(TMSApplication.db.findAll(TrainsInfo.class));
+            for (TrainsInfo info : list) {
+                if (info.getTrainsTimes() > times) {
+                    times = info.getTrainsTimes();
+                }
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+        return times;
     }
 
     /**

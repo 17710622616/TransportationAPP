@@ -174,7 +174,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
                         time = time.replace(":","");
                         time = time.replace(" ","");
-                        mSubmitInvoiceInfo.setRefrence("863907040024533" + time);
+                        mSubmitInvoiceInfo.setRefrence(TMSShareInfo.IMEI + time);
                         mSubmitInvoiceInfo.setSalesmanId(TMSCommonUtils.getUserFor40(this).getSalesmanID());
                         mSubmitInvoiceInfo.setDepositStatus(0);
                         mSubmitInvoiceInfo.setRefundStatus(0);

@@ -32,6 +32,7 @@
         <activity android:name=".TMSActivity.DeleverInvoiceDetialActivity" android:screenOrientation="portrait"/>
         <activity android:name=".TMSActivity.InvoiceStateActivity" android:screenOrientation="portrait"/>
         <activity android:name=".TMSActivity.InvoiceStateFailActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.CloseAccountHistoryActivity" android:screenOrientation="portrait"/>
 
 
         <service android:name=".TMSActivity.SubmitFailIntentService"/>

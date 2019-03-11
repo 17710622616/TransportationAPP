@@ -83,15 +83,15 @@ public class MainActivity extends BaseActivity {
         }
         //TMSShareInfo.IMEI = "863907040024533";
 
-        try {
+        /*try {
             TrainsInfo info = new TrainsInfo();
-            info.setId(1);
+            info.setId(0);
             info.setTodayDate(TMSCommonUtils.getTimeNow());
             info.setTrainsTimes(1);
             TMSApplication.db.save(info);
         } catch (DbException e) {
             e.printStackTrace();
-        }
+        }*/
 
         String loginMsg = String.valueOf(SpuUtils.get(this, "loginMsg", ""));
         if (!loginMsg.equals("") && !loginMsg.equals("null")) {    // 判斷是否有登錄記錄
@@ -102,7 +102,7 @@ public class MainActivity extends BaseActivity {
                 if (model.getLoginTime().equals(TMSCommonUtils.getTimeToday())) { // 當有登錄記錄的情況下，判斷是否是今天登錄的
                     TMSShareInfo.mUserModelList.add(model);
                     flag = true;
-                    if (model.getCorp().equals("40")) {
+                    if (model.getCorp().equals("40") || model.getCorp().equals("xx")){
                         cachModel = model;
                     }
                 }
@@ -153,7 +153,7 @@ public class MainActivity extends BaseActivity {
                         List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
                         boolean flag = false;
                         for (UserModel model : userModelList) {
-                            if (model.getCorp().equals("40")) {
+                            if (model.getCorp().equals("40") ||model.getCorp().equals("xx")) {
                                 flag = true;
                             }
                         }
@@ -168,7 +168,7 @@ public class MainActivity extends BaseActivity {
                         List<UserModel> userModelList1 = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
                         boolean flag1 = false;
                         for (UserModel model : userModelList1) {
-                            if (model.getCorp().equals("40")) {
+                            if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
                                 flag1 = true;
                             }
                         }
@@ -183,7 +183,7 @@ public class MainActivity extends BaseActivity {
                         List<UserModel> userModelList2 = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
                         boolean flag2 = false;
                         for (UserModel model : userModelList2) {
-                            if (model.getCorp().equals("40")) {
+                            if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
                                 flag2 = true;
                             }
                         }
@@ -229,7 +229,7 @@ public class MainActivity extends BaseActivity {
                         List<UserModel> modelList = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
                         boolean flag3 = false;
                         for (UserModel model : modelList) {
-                            if (model.getCorp().equals("40")) {
+                            if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
                                 flag3 = true;
                             }
                         }
@@ -331,7 +331,7 @@ public class MainActivity extends BaseActivity {
                         String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
                         List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
                         for (int i = 0; i < mUserModelList.size(); i++) {
-                            if (mUserModelList.get(i).getCorp().equals("40")) {
+                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("xx")) {
                                 mUserModelList.get(i).setCustomerTbStatus(true);
                                 TMSShareInfo.mUserModelList.get(i).setCustomerTbStatus(true);
                                 SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
@@ -389,7 +389,7 @@ public class MainActivity extends BaseActivity {
                         String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
                         List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
                         for (int i = 0; i < mUserModelList.size(); i++) {
-                            if (mUserModelList.get(i).getCorp().equals("40")) {
+                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("xx")) {
                                 mUserModelList.get(i).setInvoiceTbStatus(true);
                                 TMSShareInfo.mUserModelList.get(i).setInvoiceTbStatus(true);
                                 SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
@@ -442,7 +442,7 @@ public class MainActivity extends BaseActivity {
                 for (UserModel model : mUserModelList) {
                     if (model.getLoginTime().equals(TMSCommonUtils.getTimeToday())) { // 當有登錄記錄的情況下，判斷是否是今天登錄的
                         TMSShareInfo.mUserModelList.add(model);
-                        if (model.getCorp().equals("40")) {
+                        if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
                             if (model.isCustomerTbStatus() && model.isInvoiceTbStatus()) {    // 當是今天時判斷上次是否更新完全 && cachModel.isMaterialTbStatus()
                                 initView();
                                 setListener();
@@ -485,9 +485,7 @@ public class MainActivity extends BaseActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
                         try {
-                            TrainsInfo first1 = TMSApplication.db.findFirst(TrainsInfo.class);
-                            first1.setTrainsTimes(0);
-                            TMSApplication.db.saveOrUpdate(first1);
+                            TMSApplication.db.delete(TrainsInfo.class);
                         } catch (DbException e) {
 
                         }

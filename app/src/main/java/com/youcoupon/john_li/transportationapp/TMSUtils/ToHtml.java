@@ -72,7 +72,12 @@ public class ToHtml {
         try {
             String result = "";
             TrainsInfo first = TMSApplication.db.findFirst(TrainsInfo.class);
-            result = mHtmlHeada1 + String.valueOf(first.getTrainsTimes()) + mHtmlHeada2 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHeada3;
+            if (first != null) {
+                result = mHtmlHeada1 + String.valueOf(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1) + mHtmlHeada2 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHeada3;
+            } else {
+                result = mHtmlHeada1 + 1 + mHtmlHeada2 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHeada3;
+            }
+
             for (int i = 0; i < mDeliverInvoiceModelList.size(); i++) {
                 if (mDeliverInvoiceModelList.get(i).getRecycleNum() > 0 || mDeliverInvoiceModelList.get(i).getSendOutNum() > 0) {
                     String mid = new String(mHtmlItema1);

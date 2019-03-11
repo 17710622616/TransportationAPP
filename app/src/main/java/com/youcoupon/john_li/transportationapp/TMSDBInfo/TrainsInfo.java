@@ -24,6 +24,47 @@ public class TrainsInfo {
     private int TrainsTimes;
     @Column(name = "today_date")
     private String TodayDate;
+    @Column(name = "today_refund_body")
+    private String TodayRefundBody;
+    @Column(name = "today_deposit_body")
+    private String TodayDepositBody;
+    // 0未提交，1提交成功，2提交失敗
+    @Column(name = "today_deposit_status")
+    private int TodayDepositStatus;
+    @Column(name = "today_refund_status")
+    private int TodayRefundStatus;
+
+    public int getTodayDepositStatus() {
+        return TodayDepositStatus;
+    }
+
+    public void setTodayDepositStatus(int todayDepositStatus) {
+        TodayDepositStatus = todayDepositStatus;
+    }
+
+    public int getTodayRefundStatus() {
+        return TodayRefundStatus;
+    }
+
+    public void setTodayRefundStatus(int todayRefundStatus) {
+        TodayRefundStatus = todayRefundStatus;
+    }
+
+    public String getTodayRefundBody() {
+        return TodayRefundBody;
+    }
+
+    public void setTodayRefundBody(String todayRefundBody) {
+        TodayRefundBody = todayRefundBody;
+    }
+
+    public String getTodayDepositBody() {
+        return TodayDepositBody;
+    }
+
+    public void setTodayDepositBody(String todayDepositBody) {
+        TodayDepositBody = todayDepositBody;
+    }
 
     public String getTodayDate() {
         return TodayDate;

@@ -1,5 +1,6 @@
 package com.youcoupon.john_li.transportationapp.TMSActivity;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Picture;
@@ -7,6 +8,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebSettings;
@@ -14,31 +16,46 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CustomerInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceStateInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialNumberInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
+import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.PostStockMovementModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSConfigor;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 import com.youcoupon.john_li.transportationapp.TMSUtils.ToHtml;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.xutils.common.Callback;
 import org.xutils.common.util.KeyValue;
 import org.xutils.db.sqlite.WhereBuilder;
 import org.xutils.ex.DbException;
+import org.xutils.http.RequestParams;
+import org.xutils.x;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import hardware.print.printer;
 
@@ -78,19 +95,20 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
         StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().detectLeakedSqlLiteObjects()
                 .detectLeakedSqlLiteObjects().penaltyLog().penaltyDeath().build());
 
+        textView = findViewById(R.id.close_account_print);
         webview = (WebView) findViewById(R.id.close_account_print_wv);
     }
 
     @Override
     public void setListener() {
-
+        textView.setOnClickListener(this);
     }
 
     @Override
     public void initData() {
         headView.setTitle("結算");
         headView.setLeft(this);
-        headView.setRightText("打印", this);
+        headView.setRightText("历史", this);
 
         mDeliverInvoiceModelList = new ArrayList<>();
         getData();
@@ -161,54 +179,253 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
             case R.id.head_left:
                 finish();
                 break;
-            case R.id.head_right_tv:
-                CloseAccountActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Picture pic = webview.capturePicture();
-                            int nw = pic.getWidth();
-                            int nh = pic.getHeight();
-                            Bitmap bitmap = Bitmap.createBitmap(nw, nh, Bitmap.Config.ARGB_4444);
-                            Canvas can = new Canvas(bitmap);
-                            pic.draw(can);
-                            stroageBitmap(bitmap);
-
-                            int newWidth = nw;
-                            int newHeight = nh;
-                            if (nw > 400) {
-                                float rate = 400 * 1.0f / nw * 1.0f;
-                                newWidth = 400;
-                                newHeight = (int) (nh * rate);
-                            }
-                            bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
-                            //                        Utils.stroageBitmap(bitmap);
-                            Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
-                            stroageBitmap(newBitmap);
-                            mPrinter.PrintBitmap(newBitmap);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        } catch (Error error) {
-                            error.printStackTrace();
-                        }
-                    }
-                });
-
+            case R.id.close_account_print:
                 try {
+                    MaterialNumberInfo materialNumberFirst = TMSApplication.db.findFirst(MaterialNumberInfo.class);
+                    // 按金
+                    PostStockMovementModel movementDepositModel = new PostStockMovementModel();
+                    PostStockMovementModel.Header depositheader = new PostStockMovementModel.Header();
+                    String deposittime = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                    deposittime = deposittime.replace(":","");
+                    deposittime = deposittime.replace(" ","");
+                    TrainsInfo depositfirst = TMSApplication.db.findFirst(TrainsInfo.class);
+                    depositheader.setReference(TMSShareInfo.IMEI + deposittime);
+                    depositheader.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+                    if (depositfirst != null) {
+                        depositheader.setTruckNo(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
+                    } else {
+                        depositheader.setTruckNo(1);
+                    }
+                    movementDepositModel.setHeader(depositheader);
+
+                    List<PostStockMovementModel.Line> lineList = new ArrayList<>();
+                    PostStockMovementModel.Line depositLine = new PostStockMovementModel.Line();
+                    if (materialNumberFirst != null) {
+                        if (materialNumberFirst.getMaterialDepositeNum() != 0) {
+                            depositLine.setQuantity(materialNumberFirst.getMaterialDepositeNum());
+                        } else {
+                            depositLine.setQuantity(0);
+                        }
+                    } else {
+                        depositLine.setQuantity(0);
+                    }
+                    depositLine.setMerchandiseID("013D");
+                    lineList.add(depositLine);
+                    movementDepositModel.setLines(lineList);
+
+                    // 回收
+                    PostStockMovementModel movementRefundModel = new PostStockMovementModel();
+                    PostStockMovementModel.Header refundheader = new PostStockMovementModel.Header();
+                    String refundtime = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                    refundtime = refundtime.replace(":","");
+                    refundtime = refundtime.replace(" ","");
+                    TrainsInfo refundfirst = TMSApplication.db.findFirst(TrainsInfo.class);
+                    refundheader.setReference(TMSShareInfo.IMEI + refundtime);
+                    refundheader.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+                    if (refundfirst != null) {
+                        refundheader.setTruckNo(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
+                    } else {
+                        refundheader.setTruckNo(1);
+                    }
+                    movementRefundModel.setHeader(refundheader);
+
+                    List<PostStockMovementModel.Line> refundlineList = new ArrayList<>();
+                    PostStockMovementModel.Line refundLine = new PostStockMovementModel.Line();
+                    if (materialNumberFirst != null) {
+                        if (materialNumberFirst.getMaterialRefundNum() != 0) {
+                            refundLine.setQuantity(materialNumberFirst.getMaterialRefundNum());
+                        } else {
+                            refundLine.setQuantity(0);
+                        }
+                    } else {
+                        refundLine.setQuantity(0);
+                    }
+                    refundLine.setMerchandiseID("013D");
+                    refundlineList.add(refundLine);
+                    movementRefundModel.setLines(refundlineList);
+
+                    //新增本車次車次表
+                    TrainsInfo trainsInfo = new TrainsInfo();
+                    TrainsInfo first1 = TMSApplication.db.findFirst(TrainsInfo.class);
+                    if (first1 != null) {
+                        trainsInfo.setTrainsTimes(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
+                    } else {
+                        trainsInfo.setTrainsTimes(1);
+                    }
+                    trainsInfo.setTodayDepositBody(new Gson().toJson(movementDepositModel));
+                    trainsInfo.setTodayRefundBody(new Gson().toJson(movementRefundModel));
+                    trainsInfo.setTodayDate(TMSCommonUtils.getTimeNow());
+                    if (movementDepositModel.getLines().get(0).getQuantity() == 0) {
+                        trainsInfo.setTodayDepositStatus(1);
+                    } else {
+                        trainsInfo.setTodayDepositStatus(0);
+                    }
+                    if (movementRefundModel.getLines().get(0).getQuantity() == 0) {
+                        trainsInfo.setTodayRefundStatus(1);
+                    } else {
+                        trainsInfo.setTodayRefundStatus(0);
+                    }
+                    TMSApplication.db.saveOrUpdate(trainsInfo);
+
+                    // 將結算單提交至服務器
+                    callNetSubmitThatTrainsData();
+
+                    // 打印結算單
+                    CloseAccountActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Picture pic = webview.capturePicture();
+                                int nw = pic.getWidth();
+                                int nh = pic.getHeight();
+                                Bitmap bitmap = Bitmap.createBitmap(nw, nh, Bitmap.Config.ARGB_4444);
+                                Canvas can = new Canvas(bitmap);
+                                pic.draw(can);
+                                stroageBitmap(bitmap);
+
+                                int newWidth = nw;
+                                int newHeight = nh;
+                                if (nw > 400) {
+                                    float rate = 400 * 1.0f / nw * 1.0f;
+                                    newWidth = 400;
+                                    newHeight = (int) (nh * rate);
+                                }
+                                bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+                                //                        Utils.stroageBitmap(bitmap);
+                                Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
+                                stroageBitmap(newBitmap);
+                                mPrinter.PrintBitmap(newBitmap);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            } catch (Error error) {
+                                error.printStackTrace();
+                            }
+                        }
+                    });
+
+
+                    // 清空物料回收數量表
                     MaterialNumberInfo first = TMSApplication.db.findFirst(MaterialNumberInfo.class);
                     first.setMaterialDepositeNum(0);
                     first.setMaterialRefundNum(0);
                     TMSApplication.db.saveOrUpdate(first);
-
-                    TrainsInfo first1 = TMSApplication.db.findFirst(TrainsInfo.class);
-                    first1.setTrainsTimes(first1.getTrainsTimes() + 1);
-                    TMSApplication.db.saveOrUpdate(first1);
-                    finish();
                 } catch (DbException e) {
                     e.printStackTrace();
                 }
                 break;
+            case R.id.head_right_tv:
+                startActivity(new Intent(this, CloseAccountHistoryActivity.class));
+                break;
         }
+    }
+
+    /**
+     * 重新提交所有未成功結算
+     */
+    private void callNetSubmitThatTrainsData() {
+        try {
+            List<TrainsInfo> all = TMSApplication.db.selector(TrainsInfo.class).findAll();
+            for(TrainsInfo trainsInfo : all){
+                if (trainsInfo.getTodayDepositStatus() != 1) {
+                    PostStockMovementModel depositModel = new Gson().fromJson(trainsInfo.getTodayDepositBody(), PostStockMovementModel.class);
+                    if (depositModel.getLines().get(0).getQuantity() != 0) {
+                        callNetSubmitMaterialsAndSettlement(depositModel, true);
+                    }
+                }
+
+                if (trainsInfo.getTodayRefundStatus() != 1) {
+                    PostStockMovementModel refundModel = new Gson().fromJson(trainsInfo.getTodayRefundBody(), PostStockMovementModel.class);
+                    if (refundModel.getLines().get(0).getQuantity() != 0) {
+                        callNetSubmitMaterialsAndSettlement(refundModel, false);
+                    }
+                }
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 提交物料结算状态
+     */
+    private void callNetSubmitMaterialsAndSettlement(final PostStockMovementModel movementModel, final boolean driverout) {
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
+        paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getSalesmanID());
+        paramsMap.put("driverout", String.valueOf(driverout));
+        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.SUBMIT_MATERIALS_SETTLEMENT + TMSCommonUtils.createLinkStringByGet(paramsMap));
+        params.setAsJsonContent(true);
+        String json = new Gson().toJson(movementModel);
+        params.setBodyContent(json);
+        String uri = params.getUri();
+        params.setConnectTimeout(30 * 1000);
+        x.http().post(params, new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
+                if (commonModel.getCode() == 0) {
+                    try {
+                        WhereBuilder b = WhereBuilder.b();
+                        b.and("trains_times","=",movementModel.getHeader().getTruckNo()); //构造修改的条件
+                        KeyValue name = null;
+                        if (driverout) {
+                            name = new KeyValue("today_deposit_status", 1);
+                        } else {
+                            name = new KeyValue("today_refund_status", 1);
+                        }
+                        TMSApplication.db.update(TrainsInfo.class,b,name);
+                    } catch (DbException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        WhereBuilder b = WhereBuilder.b();
+                        b.and("trains_times","=",movementModel.getHeader().getTruckNo()); //构造修改的条件
+                        KeyValue name = null;
+                        if (driverout) {
+                            name = new KeyValue("today_deposit_status", 2);
+                        } else {
+                            name = new KeyValue("today_refund_status", 2);
+                        }
+                        TMSApplication.db.update(TrainsInfo.class,b,name);
+                    } catch (DbException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                try {
+                    WhereBuilder b = WhereBuilder.b();
+                    b.and("trains_times","=",movementModel.getHeader().getTruckNo()); //构造修改的条件
+                    KeyValue name = null;
+                    if (driverout) {
+                        name = new KeyValue("today_deposit_status", 2);
+                    } else {
+                        name = new KeyValue("today_refund_status", 2);
+                    }
+                    TMSApplication.db.update(TrainsInfo.class,b,name);
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
+                if (ex instanceof java.net.SocketTimeoutException) {
+                    Toast.makeText(CloseAccountActivity.this, "提交結算網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(CloseAccountActivity.this, "提交結算失敗！", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+
+            }
+
+            @Override
+            public void onFinished() {
+
+            }
+        });
     }
 
     public class OnTouchListenerHTML5 implements View.OnTouchListener {

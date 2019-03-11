@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/item_close_history_times"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="车次"
+        android:textSize="22sp"
+        android:textColor="@color/color_black"
+        android:layout_margin="10dp"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/item_close_history_sendout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="送出"
+        android:textSize="22sp"
+        android:textColor="@color/color_black"
+        android:layout_margin="10dp"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/item_close_history_recycle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="回收"
+        android:textSize="22sp"
+        android:textColor="@color/color_black"
+        android:layout_margin="10dp"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/item_close_history_deposit_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="送出狀態"
+        android:textSize="14sp"
+        android:textColor="@color/color_black"
+        android:layout_margin="10dp"
+        android:gravity="center"/>
+    <TextView
+        android:id="@+id/item_close_history_refund_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="回收狀態"
+        android:textSize="14sp"
+        android:textColor="@color/color_black"
+        android:layout_margin="10dp"
+        android:gravity="center"/>
+</LinearLayout>

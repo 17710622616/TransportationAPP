@@ -28,4 +28,9 @@ public class TMSConfigor {
     // 提交物料结算接口
     public final static String SUBMIT_MATERIALS_SETTLEMENT = "api/Business/PostStockMovement?";
 
+    // OK打卡
+    // 获取OK签到路线接口
+    public final static String GET_CIRCLE_ORDER_STATUS = "api/Basic/GetCircleOperatorCustomer?";
+    // 提交OK签到照片接口
+    public final static String POST_PHOTO = "api/Business/PostPhoto?";
 }

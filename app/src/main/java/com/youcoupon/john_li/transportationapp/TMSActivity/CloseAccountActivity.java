@@ -135,14 +135,27 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
     }
 
     private void getData() {
-        DeliverInvoiceModel model = new DeliverInvoiceModel();
-        model.setMaterialId("1");
+        try {
+            List<MaterialNumberInfo> all = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
+            for(MaterialNumberInfo model : all){
+                DeliverInvoiceModel deliverInvoiceModel = new DeliverInvoiceModel();
+                deliverInvoiceModel.setMaterialId(model.getMaterialId());
+                deliverInvoiceModel.setMaterialName(model.getMaterialName());
+                deliverInvoiceModel.setSendOutNum(model.getMaterialDepositeNum());
+                deliverInvoiceModel.setRecycleNum(model.getMaterialRefundNum());
+                mDeliverInvoiceModelList.add(deliverInvoiceModel);
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+        /*DeliverInvoiceModel model = new DeliverInvoiceModel();
+        model.setMaterialId("013A");
         model.setMaterialName("木卡板");
         model.setSendOutNum(0);
         model.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model);
         DeliverInvoiceModel model1 = new DeliverInvoiceModel();
-        model1.setMaterialId("1");
+        model1.setMaterialId("013B");
         model1.setMaterialName("膠卡板(大)");
         model1.setSendOutNum(0);
         model1.setRecycleNum(0);
@@ -154,23 +167,23 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
         model2.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model2);
         DeliverInvoiceModel model3 = new DeliverInvoiceModel();
-        model3.setMaterialId("1");
+        model3.setMaterialId("013C");
         model3.setMaterialName("膠片(5加侖)");
         model3.setSendOutNum(0);
         model3.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model3);
         DeliverInvoiceModel model4 = new DeliverInvoiceModel();
-        model4.setMaterialId("1");
+        model4.setMaterialId("014");
         model4.setMaterialName("5加侖吉膠桶");
         model4.setSendOutNum(0);
         model4.setRecycleNum(0);
         mDeliverInvoiceModelList.add(model4);
         DeliverInvoiceModel model5 = new DeliverInvoiceModel();
-        model5.setMaterialId("1");
-        model5.setMaterialName("5加侖吉膠箱");
+        model5.setMaterialId("015");
+        model5.setMaterialName("飛雪吉膠箱");
         model5.setSendOutNum(0);
         model5.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model5);
+        mDeliverInvoiceModelList.add(model5);*/
     }
 
     @Override
@@ -181,7 +194,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                 break;
             case R.id.close_account_print:
                 try {
-                    MaterialNumberInfo materialNumberFirst = TMSApplication.db.findFirst(MaterialNumberInfo.class);
+                    List<MaterialNumberInfo> materialNumberList = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
                     // 按金
                     PostStockMovementModel movementDepositModel = new PostStockMovementModel();
                     PostStockMovementModel.Header depositheader = new PostStockMovementModel.Header();
@@ -199,18 +212,16 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                     movementDepositModel.setHeader(depositheader);
 
                     List<PostStockMovementModel.Line> lineList = new ArrayList<>();
-                    PostStockMovementModel.Line depositLine = new PostStockMovementModel.Line();
-                    if (materialNumberFirst != null) {
-                        if (materialNumberFirst.getMaterialDepositeNum() != 0) {
-                            depositLine.setQuantity(materialNumberFirst.getMaterialDepositeNum());
+                    for (MaterialNumberInfo info : materialNumberList) {
+                        PostStockMovementModel.Line depositLine = new PostStockMovementModel.Line();
+                        if (info.getMaterialDepositeNum() != 0) {
+                            depositLine.setQuantity(info.getMaterialDepositeNum());
                         } else {
                             depositLine.setQuantity(0);
                         }
-                    } else {
-                        depositLine.setQuantity(0);
+                        depositLine.setMerchandiseID(info.getMaterialId());
+                        lineList.add(depositLine);
                     }
-                    depositLine.setMerchandiseID("013D");
-                    lineList.add(depositLine);
                     movementDepositModel.setLines(lineList);
 
                     // 回收
@@ -230,18 +241,16 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                     movementRefundModel.setHeader(refundheader);
 
                     List<PostStockMovementModel.Line> refundlineList = new ArrayList<>();
-                    PostStockMovementModel.Line refundLine = new PostStockMovementModel.Line();
-                    if (materialNumberFirst != null) {
-                        if (materialNumberFirst.getMaterialRefundNum() != 0) {
-                            refundLine.setQuantity(materialNumberFirst.getMaterialRefundNum());
+                    for (MaterialNumberInfo info : materialNumberList) {
+                        PostStockMovementModel.Line refundLine = new PostStockMovementModel.Line();
+                        if (info.getMaterialRefundNum() != 0) {
+                            refundLine.setQuantity(info.getMaterialRefundNum());
                         } else {
                             refundLine.setQuantity(0);
                         }
-                    } else {
-                        refundLine.setQuantity(0);
+                        refundLine.setMerchandiseID(info.getMaterialId());
+                        refundlineList.add(refundLine);
                     }
-                    refundLine.setMerchandiseID("013D");
-                    refundlineList.add(refundLine);
                     movementRefundModel.setLines(refundlineList);
 
                     //新增本車次車次表
@@ -255,16 +264,30 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                     trainsInfo.setTodayDepositBody(new Gson().toJson(movementDepositModel));
                     trainsInfo.setTodayRefundBody(new Gson().toJson(movementRefundModel));
                     trainsInfo.setTodayDate(TMSCommonUtils.getTimeNow());
-                    if (movementDepositModel.getLines().get(0).getQuantity() == 0) {
-                        trainsInfo.setTodayDepositStatus(1);
-                    } else {
+                    boolean a = true;
+                    for (PostStockMovementModel.Line line : movementDepositModel.getLines()) {
+                        if (line.getQuantity() != 0) {
+                            a = false;
+                        }
+                    }
+                    if (a) {
                         trainsInfo.setTodayDepositStatus(0);
-                    }
-                    if (movementRefundModel.getLines().get(0).getQuantity() == 0) {
-                        trainsInfo.setTodayRefundStatus(1);
                     } else {
-                        trainsInfo.setTodayRefundStatus(0);
+                        trainsInfo.setTodayDepositStatus(1);
                     }
+
+                    boolean b = true;
+                    for (PostStockMovementModel.Line line : movementRefundModel.getLines()) {
+                        if (line.getQuantity() != 0) {
+                            b = false;
+                        }
+                    }
+                    if (b) {
+                        trainsInfo.setTodayRefundStatus(01);
+                    } else {
+                        trainsInfo.setTodayRefundStatus(1);
+                    }
+
                     TMSApplication.db.saveOrUpdate(trainsInfo);
 
                     // 將結算單提交至服務器
@@ -305,10 +328,12 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
 
 
                     // 清空物料回收數量表
-                    MaterialNumberInfo first = TMSApplication.db.findFirst(MaterialNumberInfo.class);
-                    first.setMaterialDepositeNum(0);
-                    first.setMaterialRefundNum(0);
-                    TMSApplication.db.saveOrUpdate(first);
+                    List<MaterialNumberInfo> list = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
+                    for (MaterialNumberInfo info : list) {
+                        info.setMaterialDepositeNum(0);
+                        info.setMaterialRefundNum(0);
+                        TMSApplication.db.saveOrUpdate(info);
+                    }
                 } catch (DbException e) {
                     e.printStackTrace();
                 }
@@ -325,7 +350,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
     private void callNetSubmitThatTrainsData() {
         try {
             List<TrainsInfo> all = TMSApplication.db.selector(TrainsInfo.class).findAll();
-            for(TrainsInfo trainsInfo : all){
+            for(TrainsInfo trainsInfo : all) {
                 if (trainsInfo.getTodayDepositStatus() != 1) {
                     PostStockMovementModel depositModel = new Gson().fromJson(trainsInfo.getTodayDepositBody(), PostStockMovementModel.class);
                     if (depositModel.getLines().get(0).getQuantity() != 0) {
@@ -449,7 +474,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
     }
 
     public String testCreateHTML() {
-        try {
+        /*try {
             MaterialNumberInfo info = TMSApplication.db.findFirst(MaterialNumberInfo.class);
             int deposit = info.getMaterialDepositeNum();
             int refund = info.getMaterialRefundNum();
@@ -457,7 +482,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
             mDeliverInvoiceModelList.get(2).setRecycleNum(refund);
         } catch (Exception e) {
 
-        }
+        }*/
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
         ToHtml.convertCloseccount(mDeliverInvoiceModelList, path, this);
         return path;

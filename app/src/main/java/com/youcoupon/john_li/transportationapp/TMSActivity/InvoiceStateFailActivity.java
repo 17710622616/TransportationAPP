@@ -80,6 +80,7 @@ public class InvoiceStateFailActivity extends BaseActivity implements View.OnCli
                     for(InvoiceStateInfo info :all){
                         Intent intent = new Intent(InvoiceStateFailActivity.this, SubmitFailIntentStateService.class);
                         intent.putExtra("invoiceStateBillNo", info.getBillNo());
+                        intent.putExtra("reason", " ");
                         startService(intent);
                     }
                 } catch (DbException e) {

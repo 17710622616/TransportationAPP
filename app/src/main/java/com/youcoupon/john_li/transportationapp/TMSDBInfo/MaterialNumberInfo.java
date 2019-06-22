@@ -18,8 +18,10 @@ public class MaterialNumberInfo {
      * autoGen = true：是否自动增长
      * property = "NOT NULL"：添加约束
      */
-    @Column(name = "material_number_id",isId = true,autoGen = true,property = "NOT NULL")
+    @Column(name = "id",isId = true,autoGen = true,property = "NOT NULL")
     private int id;
+    @Column(name = "material_number_id")
+    private String materialId;
     @Column(name = "material_name")
     private String MaterialName;
     @Column(name = "material_deposite_num")
@@ -33,6 +35,14 @@ public class MaterialNumberInfo {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(String materialId) {
+        this.materialId = materialId;
     }
 
     public String getMaterialName() {

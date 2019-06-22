@@ -33,10 +33,13 @@
         <activity android:name=".TMSActivity.InvoiceStateActivity" android:screenOrientation="portrait"/>
         <activity android:name=".TMSActivity.InvoiceStateFailActivity" android:screenOrientation="portrait"/>
         <activity android:name=".TMSActivity.CloseAccountHistoryActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.ClockInOrderStatusActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.ClockInCustomerDetialActivity" android:screenOrientation="portrait"/>
 
 
         <service android:name=".TMSActivity.SubmitFailIntentService"/>
         <service android:name=".TMSActivity.SubmitFailIntentStateService"/>
+        <service android:name=".TMSUtils.PostPhotoService"/>
     </application>
 
 </manifest>

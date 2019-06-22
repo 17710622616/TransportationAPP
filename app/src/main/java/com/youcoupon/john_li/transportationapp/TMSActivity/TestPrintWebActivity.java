@@ -1,5 +1,7 @@
 package com.youcoupon.john_li.transportationapp.TMSActivity;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -8,6 +10,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.support.annotation.Nullable;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebSettings;
@@ -125,7 +129,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
 
     @Override
     public void initData() {
-        headView.setLeft(this);
+        //headView.setLeft(this);
         headView.setTitle("訂單審核");
         List<SubmitInvoiceInfo> all = null;
         try {
@@ -156,18 +160,20 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
 
             if (mSubmitInvoiceInfo.getInvoiceNo() != null) {
                 Bitmap bm = TMSCommonUtils.creatBarcode(TestPrintWebActivity.this, TMSCommonUtils.ean8(mSubmitInvoiceInfo.getInvoiceNo()),160,60, false);
+                //Bitmap bm = TMSCommonUtils.creatBarcode(TestPrintWebActivity.this, TMSCommonUtils.ean8("1803297"),160,60, false);
                 url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
             } else {
                 url = "file:///" + testCreateHTML("");// 载入本地生成的页面
             }
             webview.loadUrl(url);
         } catch (Exception e) {
-            Toast.makeText(this, "訂單查詢失敗！", Toast.LENGTH_SHORT).show();
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.initData():" + e.getStackTrace().toString() + "\n" + e.getMessage().toString(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            Log.d("訂單查詢失敗", "訂單查詢失敗" + String.valueOf(e.getStackTrace()));
+            Toast.makeText(this, "訂單查詢失敗！" + String.valueOf(e.getStackTrace()), Toast.LENGTH_SHORT).show();
         }
     }
 
     public class OnTouchListenerHTML5 implements View.OnTouchListener {
-
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             // TODO Auto-generated method stub
@@ -196,6 +202,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 customerName = customerInfo.getCustomerName();
             }
         } catch (DbException e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.testCreateHTML():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             e.printStackTrace();
         }
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
@@ -295,5 +302,13 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
 
         }
         return path;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

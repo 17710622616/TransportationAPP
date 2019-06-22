@@ -15,10 +15,13 @@ import java.io.File;
  */
 
 public class TMSApplication extends Application {
+    private static boolean isDebug = false;
     @Override
     public void onCreate() {
         super.onCreate();
         x.Ext.init(this);
+
+        //CrashHandler.getInstance().init(getApplicationContext());
     }
 
     public static void exit() {
@@ -26,6 +29,14 @@ public class TMSApplication extends Application {
         // 2：關閉所有通知
         // 3：關閉所有activity
         System.exit(0);
+    }
+
+    public static void setDebug(boolean isDebugP) {
+        isDebug = isDebugP;
+    }
+
+    public static boolean getDebugModel() {
+        return isDebug;
     }
 
     /**

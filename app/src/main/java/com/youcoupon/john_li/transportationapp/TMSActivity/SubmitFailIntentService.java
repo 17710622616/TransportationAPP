@@ -26,7 +26,9 @@ import org.xutils.ex.DbException;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +101,8 @@ public class SubmitFailIntentService extends IntentService
      * 提交发票
      * @param mDeliverInvoiceModelList
      * @param depositNum
+     * @param refundNum
+     * @param type 0: deposit送出，1:refund回收
      */
     private void callNetSubmitInvoice(List<DeliverInvoiceModel> mDeliverInvoiceModelList, final int depositNum, final int refundNum, final int type) {
         Map<String, String> paramsMap = new HashMap<>();
@@ -108,20 +112,42 @@ public class SubmitFailIntentService extends IntentService
         PostInvoiceModel postInvoiceModel = new PostInvoiceModel();
         com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Header header = new PostInvoiceModel.Header();
         header.setCustomerID(mSubmitInvoiceInfo.getCustomerID());
-        header.setReference(mSubmitInvoiceInfo.getRefrence());
+        // 判断是否为主单
+        if (type == 0) {
+            header.setReference(mSubmitInvoiceInfo.getRefrence());
+        } else {
+            // 当为发票类型为回收物料时，判断送出物料是否为0，不为0则以送出物料为主单不修改发票号码(即不处理订单号码以送出单的编码为发票编码)，当送出物料数量为0时以回收物料为主单直接修以回收物料发票编码为发票编码)
+            if (depositNum == 0) {
+                header.setReference(mSubmitInvoiceInfo.getRefrence());
+            } else {
+                String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                time = time.replace(":","");
+                time = time.replace(" ","");
+                header.setReference(TMSShareInfo.IMEI + time);
+            }
+        }
         header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
         postInvoiceModel.setHeader(header);
         List<PostInvoiceModel.Line> lineList = new ArrayList<>();
         for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
-            com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Line line = new PostInvoiceModel.Line();
-            line.setMerchandiseID(deliverInvoiceModel.getMaterialId());
+            int deposit = deliverInvoiceModel.getSendOutNum();
+            int refund = deliverInvoiceModel.getRecycleNum();
             if (deliverInvoiceModel.getSendOutNum() != 0 || deliverInvoiceModel.getRecycleNum() != 0) {
                 if (type == 0) {
-                    line.setQuantity(deliverInvoiceModel.getSendOutNum() * (-1));
+                    if (deliverInvoiceModel.getSendOutNum() != 0) {
+                        com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Line line = new PostInvoiceModel.Line();
+                        line.setMerchandiseID(deliverInvoiceModel.getMaterialId());
+                        line.setQuantity(deliverInvoiceModel.getSendOutNum());
+                        lineList.add(line);
+                    }
                 } else {
-                    line.setQuantity(deliverInvoiceModel.getRecycleNum());
+                    if (deliverInvoiceModel.getRecycleNum() != 0) {
+                        com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Line line = new PostInvoiceModel.Line();
+                        line.setMerchandiseID(deliverInvoiceModel.getMaterialId());
+                        line.setQuantity(deliverInvoiceModel.getRecycleNum() * (-1));
+                        lineList.add(line);
+                    }
                 }
-                lineList.add(line);
             }
         }
         postInvoiceModel.setLine(lineList);
@@ -135,7 +161,6 @@ public class SubmitFailIntentService extends IntentService
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     String orderNo = TMSCommonUtils.decode(commonModel.getData());
-                    orderNo = "0" + orderNo;
 
                     invoiceResult = invoiceResult - 1;
                     if (type == 0) {
@@ -144,7 +169,6 @@ public class SubmitFailIntentService extends IntentService
                         } catch (DbException e) {
                             e.printStackTrace();
                         }
-
 
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
@@ -159,7 +183,6 @@ public class SubmitFailIntentService extends IntentService
                                 e.printStackTrace();
                             }
                         }
-
 
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
@@ -219,6 +242,7 @@ public class SubmitFailIntentService extends IntentService
                     submitTimes --;
 
                     if (submitTimes == 0) {
+
                     }
                 } catch (Exception e) {
                     Toast.makeText(SubmitFailIntentService.this, e.getStackTrace().toString(), Toast.LENGTH_SHORT).show();

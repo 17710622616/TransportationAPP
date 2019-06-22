@@ -5,10 +5,10 @@ android {
     buildToolsVersion "26.0.0"
     defaultConfig {
         applicationId "com.youcoupon.john_li.transportationapp"
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 26
-        versionCode 4
-        versionName "2.0.2"
+        versionCode 14
+        versionName "2.0.14"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
@@ -17,6 +17,8 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    productFlavors {
     }
 }
 
@@ -33,4 +35,5 @@ dependencies {
     compile 'org.xutils:xutils:3.5.0'
     compile 'com.google.code.gson:gson:2.8.1'
     compile 'org.greenrobot:eventbus:3.0.0'
+    compile 'com.google.code.findbugs:jsr305:2.0.1'
 }

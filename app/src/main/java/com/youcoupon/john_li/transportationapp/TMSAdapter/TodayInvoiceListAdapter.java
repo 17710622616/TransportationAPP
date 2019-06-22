@@ -80,4 +80,8 @@ public class TodayInvoiceListAdapter extends BaseAdapter {
         private TextView item_today_invoice_status;
     }
 
+    public void refreshData(List<SubmitInvoiceInfo> list) {
+        this.list = list;
+        notifyDataSetChanged();
+    }
 }

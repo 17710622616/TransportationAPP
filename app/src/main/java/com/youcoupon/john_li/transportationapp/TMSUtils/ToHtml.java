@@ -1,10 +1,12 @@
 package com.youcoupon.john_li.transportationapp.TMSUtils;
 
 import android.content.Context;
+import android.os.Environment;
 
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
@@ -56,6 +58,7 @@ public class ToHtml {
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：ToHtml.convert():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
         }
     }
 

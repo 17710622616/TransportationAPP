@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
@@ -37,6 +38,7 @@ import org.xutils.ex.DbException;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +60,15 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
             super.handleMessage(msg);
             switch (msg.what){
                 case 1:
-                    dialog.dismiss();
+                    try {
+                        if (dialog != null) {
+                            dialog.dismiss();
+                            Toast.makeText(TodayInvoiceListActivity.this, "重新提交操作完成！", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                    } catch (Exception e) {
+
+                    }
                     break;
             }
         }
@@ -114,11 +124,14 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
         List<SubmitInvoiceInfo> all = null;
         try {
             all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
-            for (SubmitInvoiceInfo info : all) {
-                list.add(info);
+            if (all != null) {
+                for (SubmitInvoiceInfo info : all) {
+                    list.add(info);
+                }
+                mTodayInvoiceListAdapter.refreshData(list);
             }
-            mTodayInvoiceListAdapter.notifyDataSetChanged();
         } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             Toast.makeText(this, "訂單查詢失敗！", Toast.LENGTH_SHORT).show();
         }
     }
@@ -132,11 +145,6 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
                 finish();
                 break;
             case R.id.head_right_tv:
-                dialog = new ProgressDialog(TodayInvoiceListActivity.this);
-                dialog.setTitle("提示");
-                dialog.setMessage("正在重新提交失敗訂單......");
-                dialog.setCancelable(false);
-                dialog.show();
                 for (SubmitInvoiceInfo info : list) {
                     if (info.getRefundStatus() != 1 || info.getDepositStatus() != 1) {
                         failOrderNum ++;
@@ -145,6 +153,17 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
                         intent.putExtra("SubmitInvoiceInfo", new Gson().toJson(info));
                         startService(intent);
                     }
+                }
+                if(list.size() > 0) {
+                    dialog = new ProgressDialog(TodayInvoiceListActivity.this);
+                    dialog.setTitle("提示");
+                    dialog.setMessage("正在重新提交失敗訂單......");
+                    dialog.setCancelable(false);
+                    dialog.show();
+
+                    handler.sendEmptyMessageDelayed(1, 20 * 1000);
+                } else {
+                    Toast.makeText(this, "訂單已全部提交成功！", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }

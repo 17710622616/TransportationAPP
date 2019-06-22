@@ -3,12 +3,17 @@ package com.youcoupon.john_li.transportationapp.TMSUtils;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.DownloadManager;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PointF;
@@ -44,9 +49,15 @@ import org.xutils.http.HttpMethod;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.InvalidAlgorithmParameterException;
@@ -137,11 +148,41 @@ public class TMSCommonUtils {
         return ruseltBitmap;
     }
 
-    public static UserModel getUserFor40 (Context context) {
+    public static UserModel getUserFor40(Context context) {
         UserModel userModel = null;
         List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         for (UserModel model : userModelList) {
-            if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("40")) {
+                userModel = model;
+            }
+
+            if (model.getCorp().equals("xx")) {
+                userModel = model;
+            }
+        }
+        return userModel;
+    }
+
+    public static UserModel getUserFor72(Context context) {
+        UserModel userModel = null;
+        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        for (UserModel model : userModelList) {
+            if (model.getCorp().equals("72")) {
+                userModel = model;
+            }
+
+            if (model.getCorp().equals("xx")) {
+                userModel = model;
+            }
+        }
+        return userModel;
+    }
+
+    public static UserModel getUserForXX(Context context) {
+        UserModel userModel = null;
+        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        for (UserModel model : userModelList) {
+            if (model.getCorp().equals("xx")) {
                 userModel = model;
             }
         }
@@ -152,10 +193,19 @@ public class TMSCommonUtils {
      * 生成EAN-8 验证码
      */
     public static String ean8(String code) {
-        // code = "692223361219"
-        // 012345678901
-        int c1 = 0;
-        int c2 = 0;
+        /*例如要算出*471002110526*此筆資料的檢查碼，其計算過程如下:
+        (1)	將偶位數值相加乘3 。
+        7+0+2+1+5+6=21 , 21*3=63
+        (2)	將奇位數值相加。
+        4+1+0+1+0+2=8
+        (3)	將步驟1.2中所求得的值相加，取其個位數之值。
+        63+8=71
+        (4)	以10減去步驟3中所求得的值，即為該EAN條碼之檢查碼。
+        若步驟3求得的個位數為0， 檢查碼應為0。
+        10-1=9........檢查碼
+        EAN 8的檢查碼計算方式與EAN13相同。*/
+        int c1 = 0; // 奇數位
+        int c2 = 0; // 偶數位
         for (int i = 0; i <= 6; i += 2) { // i=0,2,4,6,..
             c1 += (code.charAt(i) - '0');
             if (i != 6) {
@@ -163,7 +213,10 @@ public class TMSCommonUtils {
             }
         }
         int c = (c1 + c2 * 3) % 10;
-        int cc = (10 - c);
+        int cc = 0;
+        if (c != 0) {
+            cc = (10 - c);
+        }
         return code + cc;
     }
 
@@ -587,8 +640,12 @@ public class TMSCommonUtils {
         }
     }
 
+
+    private static long downloadTaskID;                //下载任务的唯一编号标示
+    private static DownloadManager downloadManager;
+
     private static void downFile(String m_newApkUrl, final Context context) {
-        initProgressDialog(context);
+        /*initProgressDialog(context);
         // 開始下載
         //设置请求参数
         Map<String, String> paramsMap = new HashMap<>();
@@ -601,9 +658,9 @@ public class TMSCommonUtils {
         params.setExecutor(new PriorityExecutor(2, true));//自定义线程池,有效的值范围[1, 3], 设置为3时, 可能阻塞图片加载.
         params.setCancelFast(true);//是否可以被立即停止.
         //下面的回调都是在主线程中运行的,这里设置的带进度的回调
-        /**
+        *//**
          * 可取消的任务
-         */
+         *//*
         cancelable = x.http().get(params, new Callback.ProgressCallback<File>() {
             @Override
             public void onCancelled(CancelledException arg0) {
@@ -648,7 +705,22 @@ public class TMSCommonUtils {
             public void onWaiting() {
                 Log.i("tag", "等待,在onStarted方法之前执行"+Thread.currentThread().getName());
             }
-        });
+        });*/
+        ApplicationInfo applicationInfo = null;
+        try {
+            applicationInfo = context.getPackageManager().getApplicationInfo("com.android.providers.downloads", 0);
+
+            //当系统Downloader可用时才进行下载操作
+            if (applicationInfo.enabled) {
+                downloadManager = (DownloadManager) context.getSystemService(context.DOWNLOAD_SERVICE);
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(m_newApkUrl));
+                downloadTaskID = downloadManager.enqueue(request);
+            } else {
+                Toast.makeText(context, "系统下载工具不可用", Toast.LENGTH_SHORT).show();
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -758,5 +830,187 @@ public class TMSCommonUtils {
         }
 
         return userModel;
+    }
+
+    public static String compressImageFromFile(String path) {
+        //进行大小缩放来达到压缩的目的
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true; //只读边,不读内容
+        Bitmap bitmap = BitmapFactory.decodeFile(path, opts);
+        //根据原始图片的宽高比和期望的输出图片的宽高比计算最终输出的图片的宽和高
+        // 图片的宽高
+        int width = opts.outWidth;
+        int height = opts.outHeight;
+        // 预期的图片宽高
+        float scaleWidth = 1000f, scaleHeight = 1333f;
+        int be = 1;
+        if (width > height | width > scaleWidth) {
+            be = (int)(opts.outWidth / scaleWidth);
+        } else if (width < height && height > scaleHeight) {
+            be = (int)(opts.outHeight / scaleHeight);
+        }
+        if (be <= 0) {
+            be = 1;
+        }
+        opts.inJustDecodeBounds = false;
+        opts.inSampleSize = be;
+        opts.inPreferredConfig = Bitmap.Config.ARGB_8888;//该模式是默认的,可不设
+        opts.inPurgeable = true;// 同时设置才会有效
+        opts.inInputShareable = true;//。当系统内存不够时候图片自动被回收
+        Bitmap bm = BitmapFactory.decodeFile(path, opts);
+        //进行有损压缩
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int options = 100;
+        bm.compress(Bitmap.CompressFormat.JPEG, options, baos);//质量压缩方法，把压缩后的数据存放到baos中 (100表示不压缩，0表示压缩到最小)
+        long l = baos.toByteArray().length;
+        while (l / 1024 > 180) {    //循环判断如果压缩后图片是否大于maxMemmorrySize,大于继续压缩
+            baos.reset();  //重置baos即让下一次的写入覆盖之前的内容
+            options = Math.max(0, options - 10);//图片质量每次减少10
+            bm.compress(Bitmap.CompressFormat.JPEG, options, baos);//将压缩后的图片保存到baos中
+            l = baos.toByteArray().length;
+            if (options == 0) {   //如果图片的质量已降到最低则，不再进行压缩
+                break;
+            }
+        }
+        bm.recycle();
+        String base64 = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
+        return base64;
+    }
+
+    public static byte[] IntArrayToByteArray(byte[] Iarr){
+        byte[] bytes = new byte[Iarr.length];
+        for (int i = 0; i < Iarr.length; i++) {
+            bytes[i] = (byte)  (Iarr[i] & 0xFF);
+        }
+        return bytes;
+    }
+
+    private static Object unserialize(byte[] bytes) {
+        ByteArrayInputStream bais = null;
+        try {
+            // 反序列化
+            bais = new ByteArrayInputStream(bytes);
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            return ois.readByte();
+        } catch (Exception e) {
+            Log.e("{}", e.getStackTrace().toString());
+        } finally {
+            try {
+                bais.close();
+            } catch (IOException e) {
+                Log.e("{}", e.getStackTrace().toString());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 删除相对路径
+     * */
+    public static void deletePath() {
+        isHaveSDCard();
+        File file;
+        if (isHaveSDCard()) {
+            file = Environment.getExternalStorageDirectory();
+        } else {
+            file = Environment.getDataDirectory();
+        }
+        file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder");
+        RecursionDeleteFile(file);
+    }
+
+    /**
+     * 删除绝对路径
+     * */
+    public static void deleteCache() {
+        File deleteFile = new File("/sdcard/Android/data/com.eCell.eCellStudy/cache");
+        RecursionDeleteFile(deleteFile);
+        if (!deleteFile.exists()) {
+            deleteFile.mkdirs();
+        }
+    }
+
+    /**
+     * 递归删除文件和文件夹
+     *
+     * @param file
+     *            要删除的根目录
+     */
+    public static void RecursionDeleteFile(File file) {
+        if (file.isFile()) {
+            file.delete();
+            return;
+        }
+        if (file.isDirectory()) {
+            File[] childFile = file.listFiles();
+            if (childFile == null || childFile.length == 0) {
+                file.delete();
+                return;
+            }
+            for (File f : childFile) {
+                RecursionDeleteFile(f);
+            }
+            file.delete();
+        }
+    }
+
+    /** 是否有SD卡 */
+    public static boolean isHaveSDCard() {
+        String SDState = android.os.Environment.getExternalStorageState();
+        if (SDState.equals(android.os.Environment.MEDIA_MOUNTED)) {
+            return true;
+        }
+        return false;
+    }
+
+    // 将字符串写入到文本文件中
+    public static void writeTxtToFile(String strcontent, String filePath, String fileName) {
+        //生成文件夹之后，再生成文件，不然会出错
+        makeFilePath(filePath, fileName);
+
+        String strFilePath = filePath + fileName;
+        // 每次写入时，都换行写
+        String strContent = strcontent + "\r\n";
+        try {
+            File file = new File(strFilePath);
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
+            RandomAccessFile raf = new RandomAccessFile(file, "rwd");
+            raf.seek(file.length());
+            raf.write(strContent.getBytes());
+            raf.close();
+        } catch (Exception e) {
+            Log.e("TestFile", "Error on write File:" + e);
+        }
+    }
+
+    //生成文件
+    public static File makeFilePath(String filePath, String fileName) {
+        File file = null;
+        makeRootDirectory(filePath);
+        try {
+            file = new File(filePath + fileName);
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return file;
+    }
+
+    //生成文件夹
+    public static void makeRootDirectory(String filePath) {
+        File file = null;
+        try {
+            file = new File(filePath);
+            if (!file.exists()) {
+                file.mkdir();
+            }
+        } catch (Exception e) {
+            Log.i("error:", e + "");
+        }
     }
 }

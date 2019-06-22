@@ -59,10 +59,14 @@ public class MainAdapter extends BaseAdapter {
 
             holder.text.setText(list.get(i));
             if (i == 5) {
-                if (TMSCommonUtils.getUserFor40(mContext).isInvoiceTbStatus() && TMSCommonUtils.getUserFor40(mContext).isCustomerTbStatus()) {
-                    holder.warmingIv.setVisibility(View.GONE);
+                if (TMSCommonUtils.getUserFor40(mContext) != null) {
+                    if (TMSCommonUtils.getUserFor40(mContext).isInvoiceTbStatus() && TMSCommonUtils.getUserFor40(mContext).isCustomerTbStatus()) {
+                        holder.warmingIv.setVisibility(View.GONE);
+                    } else {
+                        holder.warmingIv.setVisibility(View.VISIBLE);
+                    }
                 } else {
-                    holder.warmingIv.setVisibility(View.VISIBLE);
+                    holder.warmingIv.setVisibility(View.GONE);
                 }
             } else {
                 holder.warmingIv.setVisibility(View.GONE);

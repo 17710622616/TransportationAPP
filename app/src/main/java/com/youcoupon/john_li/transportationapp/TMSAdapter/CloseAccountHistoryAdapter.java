@@ -65,8 +65,17 @@ public class CloseAccountHistoryAdapter extends BaseAdapter {
             holder.item_close_history_times.setText(String.valueOf(list.get(i).getTrainsTimes()));
             PostStockMovementModel depositBody = new Gson().fromJson(list.get(i).getTodayDepositBody(), PostStockMovementModel.class);
             PostStockMovementModel refundBody = new Gson().fromJson(list.get(i).getTodayRefundBody(), PostStockMovementModel.class);
-            holder.item_close_history_sendout.setText(String.valueOf(depositBody.getLines().get(0).getQuantity()));
-            holder.item_close_history_recycle.setText(String.valueOf(refundBody.getLines().get(0).getQuantity()));
+            int deposit = 0;
+            int refund = 0;
+            for (PostStockMovementModel.Line info : depositBody.getLines()) {
+                deposit += info.getQuantity();
+            }
+
+            for (PostStockMovementModel.Line info : refundBody.getLines()) {
+                refund += info.getQuantity();
+            }
+            holder.item_close_history_sendout.setText(String.valueOf(deposit));
+            holder.item_close_history_recycle.setText(String.valueOf(refund));
             switch (list.get(i).getTodayDepositStatus()) {
                 case 0:
                     holder.item_close_history_deposit_status.setText("提交中");

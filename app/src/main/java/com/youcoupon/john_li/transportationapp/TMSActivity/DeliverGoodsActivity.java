@@ -62,11 +62,13 @@ import java.util.Map;
 
 public class DeliverGoodsActivity extends BaseActivity implements View.OnClickListener{
     private TMSHeadView headView;
-    private TextView delivergoods_customer_no,delivergoods_customer_name, delivergoods_customer_address, delivergoods_tel;
+    private TextView delivergoods_customer_no,delivergoods_customer_name, delivergoods_customer_address, delivergoods_tel, circleClockInTv, invoiceTv;
     private ListView mLv;
     private ProgressDialog dialog;
 
+    // 物料订单的数据库类
     private SubmitInvoiceInfo mSubmitInvoiceInfo;
+    // 当前发票的物料信息记录
     private List<DeliverInvoiceModel> mDeliverInvoiceModelList;
     private DeliverGoodsAdapter mDeliverGoodsAdapter;
     private MyCodeReciver myCodeReciver;
@@ -90,10 +92,14 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         delivergoods_customer_name = findViewById(R.id.delivergoods_customer_name);
         delivergoods_customer_address = findViewById(R.id.delivergoods_customer_address);
         delivergoods_tel = findViewById(R.id.delivergoods_tel);
+        circleClockInTv = findViewById(R.id.shortcut_delivergoods_circle_clockin);
+        invoiceTv = findViewById(R.id.shortcut_delivergoods_invoice);
     }
 
     @Override
     public void setListener() {
+        circleClockInTv.setOnClickListener(this);
+        invoiceTv.setOnClickListener(this);
     }
 
     @Override
@@ -127,37 +133,23 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         unregisterReceiver(myCodeReciver);
     }
 
+    /**
+     * 获取所有物料用作当前发票的物料记录
+     */
     private void getData() {
-        DeliverInvoiceModel model = new DeliverInvoiceModel();
-        model.setMaterialId("1");
-        model.setMaterialName("木卡板");
-        model.setSendOutNum(0);
-        model.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model);
-        DeliverInvoiceModel model1 = new DeliverInvoiceModel();
-        model1.setMaterialId("1");
-        model1.setMaterialName("膠卡板(大)");
-        model1.setSendOutNum(0);
-        model1.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model1);
-        DeliverInvoiceModel model2 = new DeliverInvoiceModel();
-        model2.setMaterialId("013D");
-        model2.setMaterialName("專用膠卡板");
-        model2.setSendOutNum(0);
-        model2.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model2);
-        DeliverInvoiceModel model3 = new DeliverInvoiceModel();
-        model3.setMaterialId("1");
-        model3.setMaterialName("膠片(5加侖)");
-        model3.setSendOutNum(0);
-        model3.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model3);
-        DeliverInvoiceModel model4 = new DeliverInvoiceModel();
-        model4.setMaterialId("1");
-        model4.setMaterialName("5加侖吉膠桶");
-        model4.setSendOutNum(0);
-        model4.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model4);
+        try {
+            List<MaterialNumberInfo> all = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
+            for(MaterialNumberInfo model : all){
+                DeliverInvoiceModel deliverInvoiceModel = new DeliverInvoiceModel();
+                deliverInvoiceModel.setMaterialId(model.getMaterialId());
+                deliverInvoiceModel.setMaterialName(model.getMaterialName());
+                deliverInvoiceModel.setSendOutNum(0);
+                deliverInvoiceModel.setRecycleNum(0);
+                mDeliverInvoiceModelList.add(deliverInvoiceModel);
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
     }
 
     @RequiresApi(api = 26)
@@ -168,8 +160,16 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 finish();
                 break;
             case R.id.head_right_tv:
-                if (mDeliverInvoiceModelList.get(2).getSendOutNum() > 0 || mDeliverInvoiceModelList.get(2).getRecycleNum() > 0) {
+                boolean b = false;
+                for(DeliverInvoiceModel model : mDeliverInvoiceModelList) {
+                    if (model.getSendOutNum() > 0 || model.getRecycleNum() > 0) {
+                        b = true;
+                    }
+                }
+                // 判断有物料数量不为空的则生成一条物料记录存入数据库
+                if (b) {
                     try {
+                        // 物料送出/回收记录
                         mSubmitInvoiceInfo.setOrderBody(new Gson().toJson(mDeliverInvoiceModelList));
                         String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
                         time = time.replace(":","");
@@ -179,8 +179,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         mSubmitInvoiceInfo.setDepositStatus(0);
                         mSubmitInvoiceInfo.setRefundStatus(0);
                         TMSApplication.db.save(mSubmitInvoiceInfo);
-                        //callNetSubmitInvoice(0);
-                        checkInvoiceType();
+                        checkInvoiceType(TMSShareInfo.IMEI + time);
                     } catch (DbException e) {
                         e.printStackTrace();
                         Toast.makeText(DeliverGoodsActivity.this, "訂單存儲失敗，請重試！", Toast.LENGTH_SHORT).show();
@@ -189,68 +188,94 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     Toast.makeText(DeliverGoodsActivity.this, "暫無物料需要提交！", Toast.LENGTH_SHORT).show();
                 }
                 break;
+            case R.id.shortcut_delivergoods_invoice:
+                Intent intent1 = new Intent();
+                intent1.putExtra("result", "1");
+                setResult(RESULT_OK, intent1);
+                finish();
+                break;
+            case R.id.shortcut_delivergoods_circle_clockin:
+                Intent intent = new Intent();
+                intent.putExtra("result", "2");
+                setResult(RESULT_OK, intent);
+                finish();
+                break;
         }
     }
 
     /**
-     * 检查发票类型
+     * 检查发票类型，并存入物料总数量表中
      */
-    private void checkInvoiceType() {
-        int depositNum = 0;
-        int refundNum = 0;
-        for (DeliverInvoiceModel model : mDeliverInvoiceModelList) {
-            depositNum += model.getSendOutNum();
-            refundNum += model.getRecycleNum();
-        }
-
-        if (refundNum > 0) {
-            invoiceResult = invoiceResult + 1;
-            submitTimes ++;
+    private void checkInvoiceType(String reference) {
+        // 本发票的所有送出及回收数量
+        int totalDepositNum = 0;
+        int totalRefundNum = 0;
+        // 物料总数记录
+        for (int i = 0; i < mDeliverInvoiceModelList.size(); i++) {
+            int depositNum = 0;
+            int refundNum = 0;
+            // 查询历史数量
             try {
-                MaterialNumberInfo first = TMSApplication.db.findFirst(MaterialNumberInfo.class);
-                if (first != null) {
-                    first.setMaterialRefundNum(first.getMaterialRefundNum() + refundNum);
-                    TMSApplication.db.saveOrUpdate(first);
-                } else {
-                    MaterialNumberInfo materialNumberInfo = new MaterialNumberInfo();
-                    materialNumberInfo.setId(1);
-                    materialNumberInfo.setMaterialName("專用膠卡板");
-                    materialNumberInfo.setMaterialRefundNum(refundNum);
-                    TMSApplication.db.save(materialNumberInfo);
+                List<MaterialNumberInfo> all = TMSApplication.db.selector(MaterialNumberInfo.class).where("material_number_id","=",mDeliverInvoiceModelList.get(i).getMaterialId()).findAll();
+                for(MaterialNumberInfo model : all) {
+                    depositNum = model.getMaterialDepositeNum();
+                    refundNum = model.getMaterialRefundNum();
                 }
             } catch (DbException e) {
                 e.printStackTrace();
             }
-            callNetSubmitInvoice(depositNum, refundNum, 1);
+            int d = mDeliverInvoiceModelList.get(i).getSendOutNum();
+            int r = mDeliverInvoiceModelList.get(i).getRecycleNum();
+            // 当数量大于0时记录到记录物料总数的表中(MaterialNumberInfo)
+            if (mDeliverInvoiceModelList.get(i).getSendOutNum() > 0) {
+                try {
+                    WhereBuilder b = WhereBuilder.b();
+                    b.and("material_number_id","=", mDeliverInvoiceModelList.get(i).getMaterialId()); //构造修改的条件
+                    KeyValue name = new KeyValue("material_deposite_num", depositNum + mDeliverInvoiceModelList.get(i).getSendOutNum());
+                    TMSApplication.db.update(MaterialNumberInfo.class,b,name);
+                    totalDepositNum = depositNum + mDeliverInvoiceModelList.get(i).getSendOutNum();
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (mDeliverInvoiceModelList.get(i).getRecycleNum() > 0) {
+                try {
+                    WhereBuilder b = WhereBuilder.b();
+                    b.and("material_number_id","=", mDeliverInvoiceModelList.get(i).getMaterialId()); //构造修改的条件
+                    KeyValue name = new KeyValue("material_refund_num", refundNum + mDeliverInvoiceModelList.get(i).getRecycleNum());
+                    TMSApplication.db.update(MaterialNumberInfo.class,b,name);
+                    totalRefundNum = refundNum + mDeliverInvoiceModelList.get(i).getRecycleNum();
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
+            }
+            /*depositNum += mDeliverInvoiceModelList.get(i).getSendOutNum();
+            refundNum += mDeliverInvoiceModelList.get(i).getRecycleNum();*/
+        }
+
+        if (totalRefundNum > 0) {
+            invoiceResult = invoiceResult + 1;
+            submitTimes ++;
+            // 提交物料回收发票
+            callNetSubmitInvoice(totalDepositNum, totalRefundNum, 1, reference);
         } else {
             try {
+                // 当没有回收物料时将回收物料状态记录为提交成功
                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
             } catch (DbException e) {
                 e.printStackTrace();
             }
         }
 
-        if (depositNum > 0) {
+        if (totalDepositNum > 0) {
             invoiceResult = invoiceResult + 1;
             submitTimes ++;
-            try {
-                MaterialNumberInfo first = TMSApplication.db.findFirst(MaterialNumberInfo.class);
-                if (first != null) {
-                    first.setMaterialDepositeNum(first.getMaterialDepositeNum() + depositNum);
-                    TMSApplication.db.saveOrUpdate(first);
-                } else {
-                    MaterialNumberInfo materialNumberInfo = new MaterialNumberInfo();
-                    materialNumberInfo.setId(1);
-                    materialNumberInfo.setMaterialName("專用膠卡板");
-                    materialNumberInfo.setMaterialDepositeNum(depositNum);
-                    TMSApplication.db.save(materialNumberInfo);
-                }
-            } catch (DbException e) {
-                e.printStackTrace();
-            }
-            callNetSubmitInvoice(depositNum, refundNum, 0);
+            // 提交物料送出发票
+            callNetSubmitInvoice(totalDepositNum, totalRefundNum, 0, reference);
         } else {
             try {
+                // 当没有回收物料时将送出物料状态记录为提交成功
                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
             } catch (DbException e) {
                 e.printStackTrace();
@@ -261,40 +286,68 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
     /**
      * 提交发票
      * @param depositNum
+     * @param refundNum
+     * @param type 0: deposit送出，1:refund回收
+     * @param reference
      */
-    private void callNetSubmitInvoice(final int depositNum, final int refundNum, final int type) {
+    private void callNetSubmitInvoice(final int depositNum, final int refundNum, final int type, final String reference) {
         dialog = new ProgressDialog(this);
         dialog.setTitle("提示");
-        dialog.setMessage("正在更新資料......");
+        dialog.setMessage("正在提交發票......");
         dialog.setCancelable(false);
         dialog.show();
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
         paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.SUBMIT_DELEIVER_INVOICE + TMSCommonUtils.createLinkStringByGet(paramsMap));
-        PostInvoiceModel postInvoiceModel = new PostInvoiceModel();
-        com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Header header = new PostInvoiceModel.Header();
-        header.setCustomerID(mSubmitInvoiceInfo.getCustomerID());
-        header.setReference(mSubmitInvoiceInfo.getRefrence());
-        header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
-        postInvoiceModel.setHeader(header);
-        List<PostInvoiceModel.Line> lineList = new ArrayList<>();
-        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
-            com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel.Line line = new PostInvoiceModel.Line();
-            line.setMerchandiseID(deliverInvoiceModel.getMaterialId());
-            if (deliverInvoiceModel.getSendOutNum() != 0 || deliverInvoiceModel.getRecycleNum() != 0) {
-                if (type == 0) {
-                    line.setQuantity(deliverInvoiceModel.getSendOutNum());
-                } else {
-                    line.setQuantity(deliverInvoiceModel.getRecycleNum() * (-1));
-                }
-                lineList.add(line);
+        SubmitInvoiceInfo submitInvoiceInfo = new SubmitInvoiceInfo();
+        try {
+            List<SubmitInvoiceInfo> all = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("refrence","=", reference).findAll();
+            for(SubmitInvoiceInfo model : all) {
+                submitInvoiceInfo = model;
             }
+            PostInvoiceModel postInvoiceModel = new PostInvoiceModel();
+            // 发票表头
+            PostInvoiceModel.Header header = new PostInvoiceModel.Header();
+            header.setCustomerID(submitInvoiceInfo.getCustomerID());
+            // 判断是否为主单
+            if (type == 0) {
+                header.setReference(submitInvoiceInfo.getRefrence());
+            } else {
+                // 当为发票类型为回收物料时，判断送出物料是否为0，不为0则以送出物料为主单不修改发票号码(即不处理订单号码以送出单的编码为发票编码)，当送出物料数量为0时以回收物料为主单直接修以回收物料发票编码为发票编码)
+                if (depositNum == 0) {
+                    header.setReference(submitInvoiceInfo.getRefrence());
+                } else {
+                    String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                    time = time.replace(":","");
+                    time = time.replace(" ","");
+                    header.setReference(TMSShareInfo.IMEI + time);
+                }
+            }
+            header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+            postInvoiceModel.setHeader(header);
+            // 发票表体
+            List<PostInvoiceModel.Line> lineList = new ArrayList<>();
+                List<DeliverInvoiceModel> deliverInvoiceModelList = new Gson().fromJson(mSubmitInvoiceInfo.getOrderBody(), new TypeToken<List<DeliverInvoiceModel>>() {}.getType());
+                for (DeliverInvoiceModel deliverInvoiceModel : deliverInvoiceModelList) {
+                    PostInvoiceModel.Line line = new PostInvoiceModel.Line();
+                    line.setMerchandiseID(deliverInvoiceModel.getMaterialId());
+                    if (deliverInvoiceModel.getSendOutNum() != 0 || deliverInvoiceModel.getRecycleNum() != 0) {
+                        if (type == 0) {
+                            line.setQuantity(deliverInvoiceModel.getSendOutNum());
+                        } else {
+                            line.setQuantity(deliverInvoiceModel.getRecycleNum() * (-1));
+                        }
+                        lineList.add(line);
+                    }
+                }
+                postInvoiceModel.setLine(lineList);
+                params.setAsJsonContent(true);
+                String body = new Gson().toJson(postInvoiceModel);
+                params.setBodyContent(body);
+        } catch (DbException e) {
+            e.printStackTrace();
         }
-        postInvoiceModel.setLine(lineList);
-        params.setAsJsonContent(true);
-        String body = new Gson().toJson(postInvoiceModel);
-        params.setBodyContent(body);
         params.setConnectTimeout(10 * 1000);
         x.http().post(params, new Callback.CommonCallback<String>() {
             @Override
@@ -305,30 +358,31 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
 
                     invoiceResult = invoiceResult - 1;
                     if (type == 0) {
+                        // 修改发票号码
                         try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=", reference),new KeyValue("invoice_no", orderNo));
                         } catch (DbException e) {
                             e.printStackTrace();
                         }
 
-
+                        // 修改发票送出物料状态
                         try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 1));
                         } catch (DbException e) {
                             e.printStackTrace();
                         }
                     } else {
+                        // 当为发票类型为回收物料时，判断送出物料是否为0，不为0则以送出物料为主单不修改发票号码(即不处理订单号码以送出单的编码为发票编码)，当送出物料数量为0时以回收物料为主单直接修以回收物料发票编码为发票编码)
                         if (depositNum == 0) {
                             try {
-                                TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo));
+                                TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("invoice_no", orderNo));
                             } catch (DbException e) {
                                 e.printStackTrace();
                             }
                         }
 
-
                         try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 1));
                         } catch (DbException e) {
                             e.printStackTrace();
                         }
@@ -337,13 +391,13 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     String data = TMSCommonUtils.decode(commonModel.getData());
                     if (type == 0) {
                         try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 2));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 2));
                         } catch (DbException e) {
                             e.printStackTrace();
                         }
                     } else {
                         try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 2));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 2));
                         } catch (DbException e) {
                             e.printStackTrace();
                         }
@@ -354,10 +408,18 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
 
             @Override
             public void onError(Throwable ex, boolean isOnCallback) {
-                try {
-                    TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("status", 2));
-                } catch (DbException e) {
-                    e.printStackTrace();
+                if (type == 0) {
+                    try {
+                        TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 2));
+                    } catch (DbException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 2));
+                    } catch (DbException e) {
+                        e.printStackTrace();
+                    }
                 }
                 if (ex instanceof java.net.SocketTimeoutException) {
                     Toast.makeText(DeliverGoodsActivity.this, "提交發票網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
@@ -377,11 +439,12 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     submitTimes --;
 
                     if (submitTimes == 0) {
+                        // 当提交完成
                         Intent intent = new Intent(DeliverGoodsActivity.this, TestPrintWebActivity.class);
-                        intent.putExtra("ReferenceNo", mSubmitInvoiceInfo.getRefrence());
+                        intent.putExtra("ReferenceNo", reference);
                         startActivityForResult(intent, 1);
+                        dialog.dismiss();
                     }
-                    dialog.dismiss();
                 } catch (Exception e) {
                     Toast.makeText(DeliverGoodsActivity.this, e.getStackTrace().toString(), Toast.LENGTH_SHORT).show();
                 }
@@ -423,9 +486,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
      */
     private void IshavaInvoiceCode(Barcodemode code) {
         //添加查询条件进行查询
-        List<InvoiceInfo> all = null;
         try {
-            all = TMSApplication.db.selector(InvoiceInfo.class).where("invoice_no","=", code.getBarcode().substring(0, code.getBarcode().length() - 1)).findAll();
+            List<InvoiceInfo> all = TMSApplication.db.selector(InvoiceInfo.class).where("invoice_no","=", code.getBarcode().substring(0, code.getBarcode().length() - 1)).findAll();
             InvoiceInfo invoiceInfo = null;
             if (all != null) {
                 for(InvoiceInfo info : all){
@@ -436,8 +498,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             if (invoiceInfo != null) {
                 CustomerInfo customerInfo = null;
                 List<CustomerInfo> customerInfoList = TMSApplication.db.selector(CustomerInfo.class).where("customer_id","=",invoiceInfo.getCustomerID()).findAll();
-                for(CustomerInfo customerInfo1 : customerInfoList){
-                    customerInfo = customerInfo1;
+                for(CustomerInfo info : customerInfoList){
+                    customerInfo = info;
                 }
 
                 if (customerInfo != null) {
@@ -451,99 +513,6 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     mLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                         @Override
                         public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
-                            if (position == 2) {
-                                final AlertDialog.Builder dialog1 = new AlertDialog.Builder(DeliverGoodsActivity.this);
-                                dialog1.setCancelable(false);
-                                LayoutInflater inflater = LayoutInflater.from(DeliverGoodsActivity.this);
-                                View view1 = inflater.inflate(R.layout.dialog_deliver_goods, null);
-                                dialog1.setView(view1);//设置使用View
-                                //设置控件应该用v1.findViewById 否则出错
-                                TextView name = view1.findViewById(R.id.dialog_dg_material_name);
-                                final EditText numEt = view1.findViewById(R.id.dialog_dg_num_et);
-                                TextView submit = view1.findViewById(R.id.dialog_dg_submit_tv);
-                                TextView cancel = view1.findViewById(R.id.dialog_dg_cancel_tv);
-                                final RadioButton rb1 = view1.findViewById(R.id.dialog_dg_send_out_rb);
-                                final RadioButton rb2 = view1.findViewById(R.id.dialog_dg_recycle_rb);
-
-                                final Dialog d = dialog1.create();
-                                name.setText(mDeliverInvoiceModelList.get(position).getMaterialName());
-                                submit.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        try {
-                                            if (!numEt.getText().equals("")) {
-                                                if ((rb1.isChecked() || rb2.isChecked() ) && !(rb1.isChecked() && rb2.isChecked())) {
-                                                    if (rb1.isChecked()) {
-                                                        mDeliverInvoiceModelList.get(position).setSendOutNum(Integer.parseInt(numEt.getText().toString()));
-                                                    } else if (rb2.isChecked()) {
-                                                        mDeliverInvoiceModelList.get(position).setRecycleNum(Integer.parseInt(numEt.getText().toString()));
-                                                    }
-                                                    mDeliverGoodsAdapter.notifyDataSetChanged();
-                                                    d.dismiss();
-                                                } else {
-                                                    Toast.makeText(DeliverGoodsActivity.this, "請選擇送出或回收", Toast.LENGTH_SHORT).show();
-                                                }
-                                            } else {
-                                                Toast.makeText(DeliverGoodsActivity.this, "請輸入數量", Toast.LENGTH_SHORT).show();
-                                            }
-                                        } catch (Exception e) {
-                                            Toast.makeText(DeliverGoodsActivity.this, "請輸入數量", Toast.LENGTH_SHORT).show();
-                                        }
-                                    }
-                                });
-                                cancel.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        d.dismiss();
-                                    }
-                                });
-                                d.show();
-                            }
-                        }
-                    });
-                } else {
-                    Toast.makeText(DeliverGoodsActivity.this, "未找到該該發票對應的客戶！", Toast.LENGTH_SHORT).show();
-                    IshavaCustomerCode(code);
-                }
-            } else {
-                Toast.makeText(DeliverGoodsActivity.this, "未找到該該發票！", Toast.LENGTH_SHORT).show();
-                IshavaCustomerCode(code);
-            }
-        } catch (DbException e) {
-            e.printStackTrace();
-            Toast.makeText(DeliverGoodsActivity.this, "查找發票錯誤！", Toast.LENGTH_SHORT).show();
-            IshavaCustomerCode(code);
-        }
-    }
-
-    /**
-     * 有brcode
-     * @param code
-     */
-    private void IshavaCustomerCode(Barcodemode code) {
-        //添加查询条件进行查询
-        List<CustomerInfo> all = null;
-        try {
-            all = TMSApplication.db.selector(CustomerInfo.class).where("customer_id","=", code.getBarcode()).findAll();
-            CustomerInfo customerInfo = null;
-            if (all != null) {
-                for(CustomerInfo info :all){
-                    customerInfo = info;
-                }
-            }
-
-            if (customerInfo != null) {
-                mSubmitInvoiceInfo.setCustomerID(customerInfo.getCustomerID());
-                mSubmitInvoiceInfo.setCustomerName(customerInfo.getCustomerName());
-                delivergoods_customer_no.setText(customerInfo.getCustomerID());
-                delivergoods_customer_name.setText(customerInfo.getCustomerName());
-                delivergoods_customer_address.setText(customerInfo.getCustomerAddress());
-                delivergoods_tel.setText(customerInfo.getTelephone());
-                headView.setRightText("提交", this);
-                mLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
-                        if (position == 2) {
                             final AlertDialog.Builder dialog1 = new AlertDialog.Builder(DeliverGoodsActivity.this);
                             dialog1.setCancelable(false);
                             LayoutInflater inflater = LayoutInflater.from(DeliverGoodsActivity.this);
@@ -591,6 +560,95 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                             });
                             d.show();
                         }
+                    });
+                } else {
+                    Toast.makeText(DeliverGoodsActivity.this, "未找到該該發票對應的客戶！", Toast.LENGTH_SHORT).show();
+                    IshavaCustomerCode(code);
+                }
+            } else {
+                Toast.makeText(DeliverGoodsActivity.this, "未找到該該發票！", Toast.LENGTH_SHORT).show();
+                IshavaCustomerCode(code);
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+            Toast.makeText(DeliverGoodsActivity.this, "查找發票錯誤！", Toast.LENGTH_SHORT).show();
+            IshavaCustomerCode(code);
+        }
+    }
+
+    /**
+     * 有brcode
+     * @param code
+     */
+    private void IshavaCustomerCode(Barcodemode code) {
+        //添加查询条件进行查询
+        List<CustomerInfo> all = null;
+        try {
+            all = TMSApplication.db.selector(CustomerInfo.class).where("customer_id","=", code.getBarcode()).findAll();
+            CustomerInfo customerInfo = null;
+            if (all != null) {
+                for(CustomerInfo info :all){
+                    customerInfo = info;
+                }
+            }
+
+            if (customerInfo != null) {
+                mSubmitInvoiceInfo.setCustomerID(customerInfo.getCustomerID());
+                mSubmitInvoiceInfo.setCustomerName(customerInfo.getCustomerName());
+                delivergoods_customer_no.setText(customerInfo.getCustomerID());
+                delivergoods_customer_name.setText(customerInfo.getCustomerName());
+                delivergoods_customer_address.setText(customerInfo.getCustomerAddress());
+                delivergoods_tel.setText(customerInfo.getTelephone());
+                headView.setRightText("提交", this);
+                mLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
+                        final AlertDialog.Builder dialog1 = new AlertDialog.Builder(DeliverGoodsActivity.this);
+                        dialog1.setCancelable(false);
+                        LayoutInflater inflater = LayoutInflater.from(DeliverGoodsActivity.this);
+                        View view1 = inflater.inflate(R.layout.dialog_deliver_goods, null);
+                        dialog1.setView(view1);//设置使用View
+                        //设置控件应该用v1.findViewById 否则出错
+                        TextView name = view1.findViewById(R.id.dialog_dg_material_name);
+                        final EditText numEt = view1.findViewById(R.id.dialog_dg_num_et);
+                        TextView submit = view1.findViewById(R.id.dialog_dg_submit_tv);
+                        TextView cancel = view1.findViewById(R.id.dialog_dg_cancel_tv);
+                        final RadioButton rb1 = view1.findViewById(R.id.dialog_dg_send_out_rb);
+                        final RadioButton rb2 = view1.findViewById(R.id.dialog_dg_recycle_rb);
+
+                        final Dialog d = dialog1.create();
+                        name.setText(mDeliverInvoiceModelList.get(position).getMaterialName());
+                        submit.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                try {
+                                    if (!numEt.getText().equals("")) {
+                                        if ((rb1.isChecked() || rb2.isChecked() ) && !(rb1.isChecked() && rb2.isChecked())) {
+                                            if (rb1.isChecked()) {
+                                                mDeliverInvoiceModelList.get(position).setSendOutNum(Integer.parseInt(numEt.getText().toString()));
+                                            } else if (rb2.isChecked()) {
+                                                mDeliverInvoiceModelList.get(position).setRecycleNum(Integer.parseInt(numEt.getText().toString()));
+                                            }
+                                            mDeliverGoodsAdapter.notifyDataSetChanged();
+                                            d.dismiss();
+                                        } else {
+                                            Toast.makeText(DeliverGoodsActivity.this, "請選擇送出或回收", Toast.LENGTH_SHORT).show();
+                                        }
+                                    } else {
+                                        Toast.makeText(DeliverGoodsActivity.this, "請輸入數量", Toast.LENGTH_SHORT).show();
+                                    }
+                                } catch (Exception e) {
+                                    Toast.makeText(DeliverGoodsActivity.this, "請輸入數量", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                        cancel.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                d.dismiss();
+                            }
+                        });
+                        d.show();
                     }
                 });
             } else {

@@ -44,6 +44,7 @@ public class SubmitFailIntentStateService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
             String billNo = intent.getStringExtra("invoiceStateBillNo");
+            String reason = intent.getStringExtra("reason");
             try {
                 InvoiceStateInfo invoiceStateInfo = null;
                 //添加查询条件进行查询
@@ -53,7 +54,7 @@ public class SubmitFailIntentStateService extends IntentService {
                         invoiceStateInfo = info;
                     }
 
-                    callNetSubmitInvoiceState(invoiceStateInfo);
+                    callNetSubmitInvoiceState(invoiceStateInfo, reason);
                 } else {
                     Toast.makeText(SubmitFailIntentStateService.this, "暫無未提交發票！", Toast.LENGTH_SHORT).show();
                 }
@@ -66,14 +67,14 @@ public class SubmitFailIntentStateService extends IntentService {
     /**
      * 提交发票状态
      */
-    private void callNetSubmitInvoiceState(final InvoiceStateInfo invoiceStateInfo) {
+    private void callNetSubmitInvoiceState(final InvoiceStateInfo invoiceStateInfo, String reason) {
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", invoiceStateInfo.getCorp());
         paramsMap.put("userid", invoiceStateInfo.getUserID());
         paramsMap.put("billno", invoiceStateInfo.getBillNo());
         paramsMap.put("statistictype", invoiceStateInfo.getStaticType());
         paramsMap.put("statisticcode", invoiceStateInfo.getStaticCode());
-        paramsMap.put("reason", "");
+        paramsMap.put("reason", reason);
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.SUBMIT_INVOICE_STATE + TMSCommonUtils.createLinkStringByGet(paramsMap));
         params.setConnectTimeout(10 * 1000);
         x.http().post(params, new Callback.CommonCallback<String>() {

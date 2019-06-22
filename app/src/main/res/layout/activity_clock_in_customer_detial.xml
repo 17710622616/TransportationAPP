@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView
+        android:id="@+id/ci_customer_detial_head"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/shortcut_customer_deliver"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="送/收貨"
+            android:textSize="18sp"
+            android:padding="15dp"
+            android:layout_margin="1dp"
+            android:gravity="center"
+            android:background="@color/colorPrimary"/>
+        <TextView
+            android:id="@+id/shortcut_customer_invoice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="掃描發票"
+            android:textSize="18sp"
+            android:padding="15dp"
+            android:layout_margin="1dp"
+            android:gravity="center"
+            android:background="@color/colorPrimary"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <TextView
+            android:id="@+id/ci_customer_detial_no"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textColor="@color/colorBlack"
+            android:padding="10dp"
+            android:background="@color/color_white"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/colorMineGray" />
+        <TextView
+            android:id="@+id/ci_customer_detial_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textColor="@color/colorBlack"
+            android:padding="10dp"
+            android:background="@color/color_white"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/colorMineGray" />
+        <TextView
+            android:id="@+id/ci_customer_detial_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textColor="@color/colorBlack"
+            android:padding="10dp"
+            android:background="@color/color_white"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/colorMineGray" />
+        <TextView
+            android:id="@+id/ci_customer_detial_contact"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textColor="@color/colorBlack"
+            android:padding="10dp"
+            android:background="@color/color_white"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/colorMineGray" />
+        <TextView
+            android:id="@+id/ci_customer_detial_tel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textColor="@color/colorBlack"
+            android:padding="10dp"
+            android:background="@color/color_white"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/colorMineGray" />
+    </LinearLayout>
+
+
+    <ImageView
+        android:id="@+id/ci_customer_detial_has_clock_in"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:src="@mipmap/clock_in"
+        android:layout_gravity="center_horizontal"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/ci_customer_detial_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="45dp"
+        android:background="@drawable/shape_btn"
+        android:paddingBottom="10dp"
+        android:paddingLeft="50dp"
+        android:paddingRight="50dp"
+        android:paddingTop="10dp"
+        android:text="簽到"
+        android:textColor="#fff"
+        android:textSize="20sp" />
+</LinearLayout>

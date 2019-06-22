@@ -17,7 +17,8 @@ public class UserModel {
     // 密碼
     private String passWord;
     // 車隊id
-    private String trunkId;
+    private String TrunkId;
+    private String DriverID;
     // 登錄時間
     private String loginTime;
     // 客戶表更新狀態
@@ -25,7 +26,36 @@ public class UserModel {
     // 今日發票表更新狀態
     private boolean invoiceTbStatus;
     // 物料表更新狀態
+    private boolean clockInCustomerTbStatus;
+    // 物料表更新狀態
+    private boolean clockInOrderSatusTbStatus;
+    // 物料表更新狀態
     private boolean materialTbStatus;
+
+    public String getDriverID() {
+        return DriverID;
+    }
+
+    public void setDriverID(String driverID) {
+        DriverID = driverID;
+    }
+
+    public boolean isClockInCustomerTbStatus() {
+        return clockInCustomerTbStatus;
+    }
+
+    public void setClockInCustomerTbStatus(boolean clockInCustomerTbStatus) {
+        this.clockInCustomerTbStatus = clockInCustomerTbStatus;
+    }
+
+    public boolean isClockInOrderSatusTbStatus() {
+        return clockInOrderSatusTbStatus;
+    }
+
+    public void setClockInOrderSatusTbStatus(boolean clockInOrderSatusTbStatus) {
+        this.clockInOrderSatusTbStatus = clockInOrderSatusTbStatus;
+    }
+
     public String getID() {
         return ID;
     }
@@ -67,11 +97,11 @@ public class UserModel {
     }
 
     public String getTrunkId() {
-        return trunkId;
+        return TrunkId;
     }
 
     public void setTrunkId(String trunkId) {
-        this.trunkId = trunkId;
+        this.TrunkId = trunkId;
     }
 
     public String getLoginTime() {

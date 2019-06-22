@@ -94,7 +94,7 @@ public class DeleverInvoiceDetialActivity extends BaseActivity implements View.O
             settings.setLoadWithOverviewMode(true);
 
             if (mSubmitInvoiceInfo.getInvoiceNo() != null) {
-                Bitmap bm = TMSCommonUtils.creatBarcode(DeleverInvoiceDetialActivity.this, mSubmitInvoiceInfo.getInvoiceNo(),160,60, false);
+                Bitmap bm = TMSCommonUtils.creatBarcode(DeleverInvoiceDetialActivity.this, TMSCommonUtils.ean8(mSubmitInvoiceInfo.getInvoiceNo()),160,60, false);
                 url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
             } else {
                 url = "file:///" + testCreateHTML("");// 载入本地生成的页面

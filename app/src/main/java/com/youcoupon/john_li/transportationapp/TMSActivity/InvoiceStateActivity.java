@@ -8,9 +8,11 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.IdRes;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.RadioButton;
@@ -47,7 +49,7 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
     private EditText invoiceNoEt;
     private RadioGroup mRg;
     private RadioButton m40Rb, m71Rb, m72Rb;
-    private TextView r0Tv, r1Tv, r2Tv, r3Tv, r4Tv, r5Tv, r6Tv, r7Tv, r8Tv, r9Tv, r10Tv, r11Tv, r12Tv;
+    private TextView r0Tv, r1Tv, r2Tv, r3Tv, r4Tv, r5Tv, r6Tv, r7Tv, r8Tv, r9Tv, r10Tv, r11Tv, r12Tv, r13Tv, r14Tv, deliverTv, circleclockin;
 
     private ScannerRevicer mScannerRevicer;
     private String invoiceNo;
@@ -99,7 +101,11 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
         r9Tv = findViewById(R.id.item_invoice_9_tv);
         r10Tv = findViewById(R.id.item_invoice_10_tv);
         r11Tv = findViewById(R.id.item_invoice_11_tv);
-        r12Tv = findViewById(R.id.item_invoice_11_tv);
+        r12Tv = findViewById(R.id.item_invoice_12_tv);
+        r13Tv = findViewById(R.id.item_invoice_13_tv);
+        r14Tv = findViewById(R.id.item_invoice_14_tv);
+        deliverTv = findViewById(R.id.shortcut_invoice_deliver);
+        circleclockin = findViewById(R.id.shortcut_invoice_circle_clockin);
     }
 
     @Override
@@ -132,6 +138,8 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
         r10Tv.setOnClickListener(this);
         r11Tv.setOnClickListener(this);
         r12Tv.setOnClickListener(this);
+        r13Tv.setOnClickListener(this);
+        r14Tv.setOnClickListener(this);
 
         mRg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
@@ -149,6 +157,9 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
                 }
             }
         });
+
+        deliverTv.setOnClickListener(this);
+        circleclockin.setOnClickListener(this);
     }
 
     @Override
@@ -225,19 +236,232 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
                     case 12:
                         builder.setMessage("是否提交發票狀態：其他");
                         break;
+                    case 13:
+                        builder.setMessage("是否提交發票狀態：收貨留單");
+                        break;
+                    case 14:
+                        builder.setMessage("是否提交發票狀態：當日未能送貨");
+                        break;
                 }
                 builder.setIcon(R.mipmap.ic_launcher_round);
                 //点击对话框以外的区域是否让对话框消失
                 builder.setCancelable(true);
                 final int cachePosition = position;
-                //设置正面按钮
-                builder.setPositiveButton("是", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        try {
-                            List<InvoiceStateInfo> all = TMSApplication.db.selector(InvoiceStateInfo.class).where("bill_no","=",invoiceNo).findAll();
-                            if (all != null) {
-                                if (all.size() == 0) {
+                AlertDialog dialog = null;
+                if (cachePosition == 12) {
+                    dialog = builder.create();
+                    View dialogView = View.inflate(this, R.layout.dialog_other, null);
+                    //设置对话框布局
+                    dialog.setView(dialogView);
+                    dialog.show();
+                    final EditText etReason = (EditText) dialogView.findViewById(R.id.dialog_other_reason);
+                    Button btnSave = (Button) dialogView.findViewById(R.id.dialog_other_save);
+                    Button btnCancel = (Button) dialogView.findViewById(R.id.dialog_other_cancel);
+                    final AlertDialog finalDialog = dialog;
+                    btnSave.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            String reason = etReason.getText().toString();
+                            if (TextUtils.isEmpty(reason)) {
+                                Toast.makeText(InvoiceStateActivity.this, "具體原因不可以為空", Toast.LENGTH_SHORT).show();
+                                return;
+                            } else {
+                                try {
+                                    List<InvoiceStateInfo> all = TMSApplication.db.selector(InvoiceStateInfo.class).where("bill_no","=",invoiceNo).findAll();
+                                    if (all != null) {
+                                        if (all.size() == 0) {
+                                            InvoiceStateInfo invoiceStateInfo = new InvoiceStateInfo();
+                                            invoiceStateInfo.setBillNo(invoiceNo);
+                                            invoiceStateInfo.setCorp(crop);
+                                            invoiceStateInfo.setStatus(0);
+                                            UserModel model = TMSCommonUtils.getUserInfoByCorp(InvoiceStateActivity.this, crop);
+                                            invoiceStateInfo.setUserID(model.getID());
+                                            invoiceStateInfo.setUserName(model.getNameChinese());
+                                            invoiceStateInfo.setStaticCode("RCO  RCOO ");
+                                            invoiceStateInfo.setStaticType("DELY ");
+                                            TMSApplication.db.save(invoiceStateInfo);
+                                        } else {
+                                            UserModel model = TMSCommonUtils.getUserInfoByCorp(InvoiceStateActivity.this, crop);
+                                            WhereBuilder b = WhereBuilder.b();
+                                            b.and("bill_no","=", invoiceNo); //构造修改的条件
+                                            KeyValue name2 = new KeyValue("static_code", "RCO  RCOO ");
+                                            KeyValue name = new KeyValue("corp", crop);
+                                            KeyValue name1 = new KeyValue("status", 0);
+                                            KeyValue name3 = new KeyValue("user_id", model.getID());
+                                            KeyValue name4 = new KeyValue("user_name", model.getNameChinese());
+                                            TMSApplication.db.update(InvoiceStateInfo.class,b,name, name1, name2, name3, name4);
+                                        }
+                                    } else {
+                                        InvoiceStateInfo invoiceStateInfo = new InvoiceStateInfo();
+                                        invoiceStateInfo.setBillNo(invoiceNo);
+                                        invoiceStateInfo.setCorp(crop);
+                                        invoiceStateInfo.setStatus(0);
+                                        UserModel model = TMSCommonUtils.getUserInfoByCorp(InvoiceStateActivity.this, crop);
+                                        invoiceStateInfo.setUserID(model.getID());
+                                        invoiceStateInfo.setUserName(model.getNameChinese());
+                                        invoiceStateInfo.setStaticCode("RCO  RCOO ");
+                                        invoiceStateInfo.setStaticType("DELY ");
+                                        TMSApplication.db.save(invoiceStateInfo);
+                                    }
+
+                                    Intent intent = new Intent(InvoiceStateActivity.this, SubmitFailIntentStateService.class);
+                                    intent.putExtra("invoiceStateBillNo", invoiceNo);
+                                    intent.putExtra("reason", reason);
+                                    startService(intent);
+                                } catch (DbException e) {
+                                    e.printStackTrace();
+                                    Toast.makeText(InvoiceStateActivity.this, "發票狀態保存錯誤！", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                            finalDialog.dismiss();
+                        }
+                    });
+                    btnCancel.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            finalDialog.dismiss();
+                        }
+                    });
+                } else {
+                    //设置正確按钮
+                    builder.setPositiveButton("是", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            try {
+                                List<InvoiceStateInfo> all = TMSApplication.db.selector(InvoiceStateInfo.class).where("bill_no","=",invoiceNo).findAll();
+                                if (all != null) {
+                                    if (all.size() == 0) {
+                                        InvoiceStateInfo invoiceStateInfo = new InvoiceStateInfo();
+                                        invoiceStateInfo.setBillNo(invoiceNo);
+                                        invoiceStateInfo.setCorp(crop);
+                                        invoiceStateInfo.setStatus(0);
+                                        UserModel model = TMSCommonUtils.getUserInfoByCorp(InvoiceStateActivity.this, crop);
+                                        invoiceStateInfo.setUserID(model.getID());
+                                        invoiceStateInfo.setUserName(model.getNameChinese());
+                                        switch (cachePosition) {
+                                            case 0:
+                                                invoiceStateInfo.setStaticCode("SD   SD0  ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 1:
+                                                invoiceStateInfo.setStaticCode("RCO  RCO1 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 2:
+                                                invoiceStateInfo.setStaticCode("RCO  RCO4 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 3:
+                                                invoiceStateInfo.setStaticCode("RCO  RCS3 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 4:
+                                                invoiceStateInfo.setStaticCode("RCS  RCS4 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 5:
+                                                invoiceStateInfo.setStaticCode("RCO  RCO5 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 6:
+                                                invoiceStateInfo.setStaticCode("RCS  RCS5 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 7:
+                                                invoiceStateInfo.setStaticCode("RCO  RCO6 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 8:
+                                                invoiceStateInfo.setStaticCode("RCO  RCO8 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 9:
+                                                invoiceStateInfo.setStaticCode("RCS  RCS6 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 10:
+                                                invoiceStateInfo.setStaticCode("RCO  RCO7 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 11:
+                                                invoiceStateInfo.setStaticCode("RCO  RCO9 ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 12:
+                                                invoiceStateInfo.setStaticCode("RCO  RCOO ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 13:
+                                                invoiceStateInfo.setStaticCode("SD   SD3  ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                            case 14:
+                                                invoiceStateInfo.setStaticCode("RCO  RCOA ");
+                                                invoiceStateInfo.setStaticType("DELY ");
+                                                break;
+                                        }
+                                        String str = invoiceStateInfo.toString();
+                                        TMSApplication.db.save(invoiceStateInfo);
+                                    } else {
+                                        UserModel model = TMSCommonUtils.getUserInfoByCorp(InvoiceStateActivity.this, crop);
+                                        WhereBuilder b = WhereBuilder.b();
+                                        b.and("bill_no","=", invoiceNo); //构造修改的条件
+                                        KeyValue name2 = null;
+                                        switch (cachePosition) {
+                                            case 0:
+                                                name2 = new KeyValue("static_code", "SD   SD0  ");
+                                                break;
+                                            case 1:
+                                                name2 = new KeyValue("static_code", "RCO  RCO1 ");
+                                                break;
+                                            case 2:
+                                                name2 = new KeyValue("static_code", "RCO  RCO4 ");
+                                                break;
+                                            case 3:
+                                                name2 = new KeyValue("static_code", "RCO  RCS3 ");
+                                                break;
+                                            case 4:
+                                                name2 = new KeyValue("static_code", "RCS  RCS4 ");
+                                                break;
+                                            case 5:
+                                                name2 = new KeyValue("static_code", "RCO  RCO5 ");
+                                                break;
+                                            case 6:
+                                                name2 = new KeyValue("static_code", "RCS  RCS5 ");
+                                                break;
+                                            case 7:
+                                                name2 = new KeyValue("static_code", "RCO  RCO6 ");
+                                                break;
+                                            case 8:
+                                                name2 = new KeyValue("static_code", "RCO  RCO8 ");
+                                                break;
+                                            case 9:
+                                                name2 = new KeyValue("static_code", "RCS  RCS6 ");
+                                                break;
+                                            case 10:
+                                                name2 = new KeyValue("static_code", "RCO  RCO7 ");
+                                                break;
+                                            case 11:
+                                                name2 = new KeyValue("static_code", "RCO  RCO9 ");
+                                                break;
+                                            case 12:
+                                                name2 = new KeyValue("static_code", "RCO  RCOO ");
+                                                break;
+                                            case 13:
+                                                name2 = new KeyValue("static_code", "SD   SD3  ");
+                                                break;
+                                            case 14:
+                                                name2 = new KeyValue("static_code", "RCO  RCOA ");
+                                                break;
+                                        }
+
+                                        KeyValue name = new KeyValue("corp", crop);
+                                        KeyValue name1 = new KeyValue("status", 0);
+                                        KeyValue name3 = new KeyValue("user_id", model.getID());
+                                        KeyValue name4 = new KeyValue("user_name", model.getNameChinese());
+                                        TMSApplication.db.update(InvoiceStateInfo.class,b,name, name1, name2, name3, name4);
+                                    }
+                                } else {
                                     InvoiceStateInfo invoiceStateInfo = new InvoiceStateInfo();
                                     invoiceStateInfo.setBillNo(invoiceNo);
                                     invoiceStateInfo.setCorp(crop);
@@ -291,153 +515,46 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
                                             invoiceStateInfo.setStaticType("DELY ");
                                             break;
                                         case 11:
-                                            invoiceStateInfo.setStaticCode("");
+                                            invoiceStateInfo.setStaticCode("RCO  RCO9 ");
                                             invoiceStateInfo.setStaticType("DELY ");
                                             break;
                                         case 12:
                                             invoiceStateInfo.setStaticCode("RCO  RCOO ");
                                             invoiceStateInfo.setStaticType("DELY ");
                                             break;
+                                        case 13:
+                                            invoiceStateInfo.setStaticCode("SD   SD3  ");
+                                            invoiceStateInfo.setStaticType("DELY ");
+                                            break;
+                                        case 14:
+                                            invoiceStateInfo.setStaticCode("RCO  RCOA ");
+                                            invoiceStateInfo.setStaticType("DELY ");
+                                            break;
                                     }
                                     String str = invoiceStateInfo.toString();
                                     TMSApplication.db.save(invoiceStateInfo);
-                                } else {
-                                    UserModel model = TMSCommonUtils.getUserInfoByCorp(InvoiceStateActivity.this, crop);
-                                    WhereBuilder b = WhereBuilder.b();
-                                    b.and("bill_no","=", invoiceNo); //构造修改的条件
-                                    KeyValue name2 = null;
-                                    switch (cachePosition) {
-                                        case 0:
-                                            name2 = new KeyValue("static_type", "SD   SD0  ");
-                                            break;
-                                        case 1:
-                                            name2 = new KeyValue("static_type", "RCO  RCO1 ");
-                                            break;
-                                        case 2:
-                                            name2 = new KeyValue("static_type", "RCO  RCO4 ");
-                                            break;
-                                        case 3:
-                                            name2 = new KeyValue("static_type", "RCO  RCS3 ");
-                                            break;
-                                        case 4:
-                                            name2 = new KeyValue("static_type", "RCS  RCS4 ");
-                                            break;
-                                        case 5:
-                                            name2 = new KeyValue("static_type", "RCO  RCO5 ");
-                                            break;
-                                        case 6:
-                                            name2 = new KeyValue("static_type", "RCS  RCS5 ");
-                                            break;
-                                        case 7:
-                                            name2 = new KeyValue("static_type", "RCO  RCO6 ");
-                                            break;
-                                        case 8:
-                                            name2 = new KeyValue("static_type", "RCO  RCO8 ");
-                                            break;
-                                        case 9:
-                                            name2 = new KeyValue("static_type", "RCS  RCS6 ");
-                                            break;
-                                        case 10:
-                                            name2 = new KeyValue("static_type", "RCO  RCO7 ");
-                                            break;
-                                        case 11:
-                                            name2 = new KeyValue("static_type", "");
-                                            break;
-                                        case 12:
-                                            name2 = new KeyValue("static_type", "RCO  RCOO ");
-                                            break;
-                                    }
+                                }
 
-                                    KeyValue name = new KeyValue("corp", crop);
-                                    KeyValue name1 = new KeyValue("status", 0);
-                                    KeyValue name3 = new KeyValue("user_id", model.getID());
-                                    KeyValue name4 = new KeyValue("user_name", model.getNameChinese());
-                                    TMSApplication.db.update(InvoiceStateInfo.class,b,name, name1, name2, name3, name4);
-                                }
-                            } else {
-                                InvoiceStateInfo invoiceStateInfo = new InvoiceStateInfo();
-                                invoiceStateInfo.setBillNo(invoiceNo);
-                                invoiceStateInfo.setCorp(crop);
-                                invoiceStateInfo.setStatus(0);
-                                UserModel model = TMSCommonUtils.getUserInfoByCorp(InvoiceStateActivity.this, crop);
-                                invoiceStateInfo.setUserID(model.getID());
-                                invoiceStateInfo.setUserName(model.getNameChinese());
-                                switch (cachePosition) {
-                                    case 0:
-                                        invoiceStateInfo.setStaticCode("SD   SD0  ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 1:
-                                        invoiceStateInfo.setStaticCode("RCO  RCO1 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 2:
-                                        invoiceStateInfo.setStaticCode("RCO  RCO4 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 3:
-                                        invoiceStateInfo.setStaticCode("RCO  RCS3 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 4:
-                                        invoiceStateInfo.setStaticCode("RCS  RCS4 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 5:
-                                        invoiceStateInfo.setStaticCode("RCO  RCO5 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 6:
-                                        invoiceStateInfo.setStaticCode("RCS  RCS5 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 7:
-                                        invoiceStateInfo.setStaticCode("RCO  RCO6 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 8:
-                                        invoiceStateInfo.setStaticCode("RCO  RCO8 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 9:
-                                        invoiceStateInfo.setStaticCode("RCS  RCS6 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 10:
-                                        invoiceStateInfo.setStaticCode("RCO  RCO7 ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 11:
-                                        invoiceStateInfo.setStaticCode("");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                    case 12:
-                                        invoiceStateInfo.setStaticCode("RCO  RCOO ");
-                                        invoiceStateInfo.setStaticType("DELY ");
-                                        break;
-                                }
-                                String str = invoiceStateInfo.toString();
-                                TMSApplication.db.save(invoiceStateInfo);
+                                Intent intent = new Intent(InvoiceStateActivity.this, SubmitFailIntentStateService.class);
+                                intent.putExtra("invoiceStateBillNo", invoiceNo);
+                                intent.putExtra("reason", " ");
+                                startService(intent);
+                            } catch (DbException e) {
+                                e.printStackTrace();
+                                Toast.makeText(InvoiceStateActivity.this, "發票狀態保存錯誤！", Toast.LENGTH_SHORT).show();
                             }
-
-                            Intent intent = new Intent(InvoiceStateActivity.this, SubmitFailIntentStateService.class);
-                            intent.putExtra("invoiceStateBillNo", invoiceNo);
-                            startService(intent);
-                        } catch (DbException e) {
-                            e.printStackTrace();
-                            Toast.makeText(InvoiceStateActivity.this, "發票狀態保存錯誤！", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
                         }
-                        dialog.dismiss();
-                    }
-                });
-                //设置反面按钮
-                builder.setNegativeButton("否", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-                AlertDialog dialog = builder.create();
+                    });
+                    //设置反面按钮
+                    builder.setNegativeButton("否", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+                    dialog = builder.create();
+                }
                 //显示对话框
                 dialog.show();
             } else {
@@ -495,6 +612,24 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
                 break;
             case R.id.item_invoice_12_tv:
                 saveInvoiceStateInDB(12);
+                break;
+            case R.id.item_invoice_13_tv:
+                saveInvoiceStateInDB(13);
+                break;
+            case R.id.item_invoice_14_tv:
+                saveInvoiceStateInDB(14);
+                break;
+            case R.id.shortcut_invoice_deliver:
+                Intent intent = new Intent();
+                intent.putExtra("result", "1");
+                setResult(RESULT_OK, intent);
+                finish();
+                break;
+            case R.id.shortcut_invoice_circle_clockin:
+                Intent intent1 = new Intent();
+                intent1.putExtra("result", "2");
+                setResult(RESULT_OK, intent1);
+                finish();
                 break;
         }
     }

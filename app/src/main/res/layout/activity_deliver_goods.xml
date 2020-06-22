@@ -8,179 +8,216 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:id="@+id/shortcut_delivergoods_invoice"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="掃描發票"
-            android:textSize="18sp"
-            android:padding="15dp"
-            android:layout_margin="1dp"
-            android:gravity="center"
-            android:background="@color/colorPrimary"/>
-        <TextView
-            android:id="@+id/shortcut_delivergoods_circle_clockin"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="CircleK簽到"
-            android:textSize="18sp"
-            android:padding="15dp"
-            android:layout_margin="1dp"
-            android:gravity="center"
-            android:background="@color/colorPrimary"/>
-    </LinearLayout>
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/shortcut_delivergoods_invoice"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="掃描發票"
+                    android:textSize="18sp"
+                    android:padding="15dp"
+                    android:layout_margin="1dp"
+                    android:gravity="center"
+                    android:background="@color/colorPrimary"
+                    android:visibility="gone"/>
+                <TextView
+                    android:id="@+id/shortcut_delivergoods_circle_clockin"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="CircleK簽到"
+                    android:textSize="18sp"
+                    android:padding="15dp"
+                    android:layout_margin="1dp"
+                    android:gravity="center"
+                    android:background="@color/colorPrimary"
+                    android:visibility="gone"/>
+            </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:padding="8dp"
-            android:text="客戶編碼："
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:padding="8dp"
+                    android:text="客戶編碼："
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
 
-        <TextView
-            android:id="@+id/delivergoods_customer_no"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="5"
-            android:padding="8dp"
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/delivergoods_customer_no"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="8dp"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
+            </LinearLayout>
 
-    <View style="@style/UnderLineTextView"/>
+            <View style="@style/UnderLineTextView"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:padding="8dp"
-            android:text="客戶名稱："
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:padding="8dp"
+                    android:text="客戶名稱："
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
 
-        <TextView
-            android:id="@+id/delivergoods_customer_name"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="5"
-            android:padding="8dp"
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/delivergoods_customer_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="8dp"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
+            </LinearLayout>
 
-    <View style="@style/UnderLineTextView"/>
+            <View style="@style/UnderLineTextView"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:padding="8dp"
-            android:text="客戶地址："
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:padding="8dp"
+                    android:text="客戶地址："
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
 
-        <TextView
-            android:id="@+id/delivergoods_customer_address"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="5"
-            android:padding="8dp"
-            android:textSize="18sp"
-            android:textColor="@color/color_black"
-            android:singleLine="true"/>
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/delivergoods_customer_address"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="8dp"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"
+                    android:singleLine="true"/>
+            </LinearLayout>
 
-    <View style="@style/UnderLineTextView"/>
+            <View style="@style/UnderLineTextView"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:padding="8dp"
-            android:text="聯繫電話："
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:padding="8dp"
+                    android:text="聯繫電話："
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
 
-        <TextView
-            android:id="@+id/delivergoods_tel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="5"
-            android:padding="8dp"
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/delivergoods_tel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="8dp"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
+            </LinearLayout>
 
-    <View style="@style/UnderLineTextView"/>
+            <View style="@style/UnderLineTextView"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="8dp"
-        android:text="操作："
-        android:textSize="18sp"
-        android:textColor="@color/color_black"/>
+            <LinearLayout
+                android:id="@+id/delivergoods_invoiceno_ll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:padding="8dp"
+                    android:text="發票號碼："
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="5"
-            android:padding="8dp"
-            android:text="物料"
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
+                <TextView
+                    android:id="@+id/delivergoods_invoiceno"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="8dp"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
+            </LinearLayout>
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.5"
-            android:padding="8dp"
-            android:text="送出"
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
+            <View style="@style/UnderLineTextView"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:text="操作："
+                android:textSize="18sp"
+                android:textColor="@color/color_black"/>
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.5"
-            android:padding="8dp"
-            android:text="回收"
-            android:textSize="18sp"
-            android:textColor="@color/color_black"/>
-    </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="8dp"
+                    android:text="物料"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
 
-    <View style="@style/UnderLineTextView"/>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.5"
+                    android:padding="8dp"
+                    android:text="送出"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
 
-    <ListView
-        android:id="@+id/deliver_goods_lv"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.5"
+                    android:padding="8dp"
+                    android:text="回收"
+                    android:textSize="18sp"
+                    android:textColor="@color/color_black"/>
+            </LinearLayout>
+
+            <View style="@style/UnderLineTextView"/>
+
+            <com.youcoupon.john_li.transportationapp.TMSView.NoScrollListView
+                android:id="@+id/deliver_goods_lv"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

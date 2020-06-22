@@ -3,12 +3,13 @@ package com.youcoupon.john_li.transportationapp.TMSActivity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.youcoupon.john_li.transportationapp.R;

@@ -16,7 +16,7 @@
             android:textSize="120sp"
             android:textColor="@color/color_white"
             android:gravity="center"/>
-        <android.support.design.widget.TextInputLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
@@ -28,8 +28,8 @@
                 android:layout_height="wrap_content"
                 android:hint="公司"
                 android:textColor="@color/color_white"/>
-        </android.support.design.widget.TextInputLayout>
-        <android.support.design.widget.TextInputLayout
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
@@ -41,8 +41,8 @@
                 android:layout_height="wrap_content"
                 android:hint="用戶名"
                 android:textColor="@color/color_white"/>
-        </android.support.design.widget.TextInputLayout>
-        <android.support.design.widget.TextInputLayout
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
@@ -54,7 +54,7 @@
                 android:layout_height="wrap_content"
                 android:hint="密碼"
                 android:textColor="@color/color_white"/>
-        </android.support.design.widget.TextInputLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             android:id="@+id/login_submit"

@@ -24,6 +24,10 @@ public class InvoiceInfo {
     private String CustomerID;
     @Column(name = "invoice_no")
     private String InvoiceNo;
+    @Column(name = "remark")
+    private String remark;
+    @Column(name = "lines")
+    private String lines;
 
     public int getId() {
         return id;
@@ -47,6 +51,22 @@ public class InvoiceInfo {
 
     public void setInvoiceNo(String invoiceNo) {
         InvoiceNo = invoiceNo;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
+    public String getLines() {
+        return lines;
+    }
+
+    public void setLines(String lines) {
+        this.lines = lines;
     }
 
     //默认的构造方法必须写出，如果没有，这张表是创建不成功的

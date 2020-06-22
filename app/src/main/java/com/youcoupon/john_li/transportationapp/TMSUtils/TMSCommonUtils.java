@@ -1,17 +1,14 @@
 package com.youcoupon.john_li.transportationapp.TMSUtils;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -21,16 +18,16 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
-import android.support.annotation.RequiresApi;
-import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
-import android.util.Xml;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
+import androidx.core.content.FileProvider;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -38,12 +35,10 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
-import com.youcoupon.john_li.transportationapp.TMSActivity.LoginActivity;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
 
 import org.xutils.common.Callback;
-import org.xutils.common.task.PriorityExecutor;
 import org.xutils.ex.DbException;
 import org.xutils.http.HttpMethod;
 import org.xutils.http.RequestParams;
@@ -54,9 +49,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -64,7 +57,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,7 +69,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 import javax.crypto.spec.IvParameterSpec;
@@ -156,7 +147,7 @@ public class TMSCommonUtils {
                 userModel = model;
             }
 
-            if (model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("XX")) {
                 userModel = model;
             }
         }
@@ -171,7 +162,7 @@ public class TMSCommonUtils {
                 userModel = model;
             }
 
-            if (model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("XX")) {
                 userModel = model;
             }
         }
@@ -182,7 +173,7 @@ public class TMSCommonUtils {
         UserModel userModel = null;
         List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         for (UserModel model : userModelList) {
-            if (model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("XX")) {
                 userModel = model;
             }
         }
@@ -305,7 +296,8 @@ public class TMSCommonUtils {
         Canvas cv = new Canvas(newBitmap);
         cv.drawBitmap(first,marginW,0,null);
         cv.drawBitmap(second, fromPoint.x, fromPoint.y, null);
-        cv.save(Canvas.ALL_SAVE_FLAG);
+        //cv.save(Canvas.ALL_SAVE_FLAG);
+        cv.save();
         cv.restore();
 
         return newBitmap;

@@ -2,10 +2,11 @@ package com.youcoupon.john_li.transportationapp.TMSActivity;
 
 import android.app.Activity;
 import android.os.Build;
-import android.support.annotation.LayoutRes;
-import android.support.v4.app.FragmentActivity;
 import android.view.Window;
 import android.view.WindowManager;
+
+import androidx.annotation.LayoutRes;
+import androidx.fragment.app.FragmentActivity;
 
 import com.youcoupon.john_li.transportationapp.R;
 

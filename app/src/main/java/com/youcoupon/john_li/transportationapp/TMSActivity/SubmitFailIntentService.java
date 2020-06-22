@@ -1,10 +1,7 @@
 package com.youcoupon.john_li.transportationapp.TMSActivity;
 
 import android.app.IntentService;
-import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.Nullable;
 import android.widget.Toast;
 
 import com.google.gson.Gson;

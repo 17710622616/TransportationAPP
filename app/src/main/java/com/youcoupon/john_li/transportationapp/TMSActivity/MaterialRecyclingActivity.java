@@ -1,9 +1,10 @@
 package com.youcoupon.john_li.transportationapp.TMSActivity;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
 
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;

@@ -2,7 +2,6 @@ package com.youcoupon.john_li.transportationapp.TMSActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.ListView;
 
@@ -17,11 +16,13 @@ import org.xutils.ex.DbException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 /**
  * Created by John_Li on 25/1/2019.
  */
 
-public class InvoiceStateFailActivity extends BaseActivity implements View.OnClickListener{
+public class  InvoiceStateFailActivity extends BaseActivity implements View.OnClickListener{
     private TMSHeadView headView;
     private ListView mLv;
 

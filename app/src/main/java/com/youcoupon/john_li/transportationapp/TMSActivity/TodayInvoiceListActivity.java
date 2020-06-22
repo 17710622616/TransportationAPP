@@ -1,48 +1,32 @@
 package com.youcoupon.john_li.transportationapp.TMSActivity;
 
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSAdapter.TodayInvoiceListAdapter;
-import com.youcoupon.john_li.transportationapp.TMSDBInfo.CustomerInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
-import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
-import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
-import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceOutModel;
-import com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
-import com.youcoupon.john_li.transportationapp.TMSUtils.TMSConfigor;
-import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import org.xutils.common.Callback;
-import org.xutils.common.util.KeyValue;
-import org.xutils.db.sqlite.WhereBuilder;
-import org.xutils.ex.DbException;
-import org.xutils.http.RequestParams;
-import org.xutils.x;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by John_Li on 27/11/2018.
@@ -125,10 +109,16 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
         try {
             all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
             if (all != null) {
-                for (SubmitInvoiceInfo info : all) {
-                    list.add(info);
+                if (all.size() > 0) {
+                    for (SubmitInvoiceInfo info : all) {
+                        list.add(info);
+                    }
+                    mTodayInvoiceListAdapter.refreshData(list);
+                } else {
+                    Toast.makeText(this, "暫無今日訂單！", Toast.LENGTH_SHORT).show();
                 }
-                mTodayInvoiceListAdapter.refreshData(list);
+            } else {
+                Toast.makeText(this, "暫無今日訂單！", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");

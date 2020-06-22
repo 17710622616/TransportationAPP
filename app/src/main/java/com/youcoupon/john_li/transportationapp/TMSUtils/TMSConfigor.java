@@ -4,9 +4,11 @@ package com.youcoupon.john_li.transportationapp.TMSUtils;
  * Created by John_Li on 26/11/2018.
  */
 
+
 public class TMSConfigor {
     // 測試url
-    public final static String BASE_URL = "http://202.100.100.151/";
+    //public final static String BASE_URL = "http://202.100.100.151/";
+    public final static String BASE_URL = "http://202.100.100.33:10090/";
     // 正式url
     //public final static String BASE_URL = "http://psamaterial.moccb.com/";
     // 登錄接口
@@ -19,6 +21,10 @@ public class TMSConfigor {
     public final static String GET_NEW_APK = "api/Tools/GetAPK?";
     // 獲取客戶列表接口
     public final static String GET_CUSTOMER_LIST = "api/Basic/GetCustomerList?";
+    // 獲取物料列表接口
+    public final static String GET_MATERIAL_LIST = "api/Basic/GetMaterialList?";
+    // 獲取物料關係列表接口
+    public final static String GET_MATERIAL_CORRESPONDENCE_LIST = "api/Basic/GetMaterialCorrespondence?";
     // 獲取當日發票列表接口
     public final static String GET_TODAY_INVOICE_LIST = "api/Basic/GetTodayInvoiceList?";
     // 提交發票接口

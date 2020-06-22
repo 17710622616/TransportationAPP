@@ -30,12 +30,32 @@ public class SubmitInvoiceInfo {
     private String SalesmanId;
     @Column(name = "order_body")
     private String OrderBody;
+    @Column(name="sun_invoice_no")
+    private String SunInvoiceNo;
+    @Column(name="sun_refrence")
+    private String SunRefrence;
     @Column(name = "depositStatus")
     private int depositStatus;
     @Column(name = "refundStatus")
     private int refundStatus;
     @Column(name = "refrence")
     private String Refrence;
+
+    public String getSunInvoiceNo() {
+        return SunInvoiceNo;
+    }
+
+    public void setSunInvoiceNo(String sunInvoiceNo) {
+        SunInvoiceNo = sunInvoiceNo;
+    }
+
+    public String getSunRefrence() {
+        return SunRefrence;
+    }
+
+    public void setSunRefrence(String sunRefrence) {
+        SunRefrence = sunRefrence;
+    }
 
     public String getCustomerName() {
         return CustomerName;

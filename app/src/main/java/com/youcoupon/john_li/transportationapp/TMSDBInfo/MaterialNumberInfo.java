@@ -21,9 +21,11 @@ public class MaterialNumberInfo {
     @Column(name = "id",isId = true,autoGen = true,property = "NOT NULL")
     private int id;
     @Column(name = "material_number_id")
-    private String materialId;
+    private String MaterialID;
     @Column(name = "material_name")
-    private String MaterialName;
+    private String NameChinese;
+    @Column(name = "short_material_name")
+    private String ShortNameChinese;
     @Column(name = "material_deposite_num")
     private int MaterialDepositeNum;
     @Column(name = "material_refund_num")
@@ -37,20 +39,28 @@ public class MaterialNumberInfo {
         this.id = id;
     }
 
-    public String getMaterialId() {
-        return materialId;
+    public String getMaterialID() {
+        return MaterialID;
     }
 
-    public void setMaterialId(String materialId) {
-        this.materialId = materialId;
+    public void setMaterialID(String materialID) {
+        MaterialID = materialID;
     }
 
     public String getMaterialName() {
-        return MaterialName;
+        return NameChinese;
     }
 
-    public void setMaterialName(String materialName) {
-        MaterialName = materialName;
+    public void setMaterialName(String NameChinese) {
+        NameChinese = NameChinese;
+    }
+
+    public String getNameChinese() {
+        return NameChinese;
+    }
+
+    public void setNameChinese(String nameChinese) {
+        NameChinese = nameChinese;
     }
 
     public int getMaterialDepositeNum() {
@@ -67,6 +77,14 @@ public class MaterialNumberInfo {
 
     public void setMaterialRefundNum(int materialRefundNum) {
         MaterialRefundNum = materialRefundNum;
+    }
+
+    public String getShortNameChinese() {
+        return ShortNameChinese;
+    }
+
+    public void setShortNameChinese(String shortNameChinese) {
+        ShortNameChinese = shortNameChinese;
     }
 
     //默认的构造方法必须写出，如果没有，这张表是创建不成功的

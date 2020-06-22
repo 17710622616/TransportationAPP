@@ -9,20 +9,25 @@ import android.graphics.Picture;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
-import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.viewpager.widget.ViewPager;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
+import com.youcoupon.john_li.transportationapp.TMSAdapter.OrderDetialPageAdapter;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CustomerInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
@@ -39,6 +44,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import hardware.print.printer;
@@ -49,11 +55,18 @@ import hardware.print.printer;
 
 public class TestPrintWebActivity extends BaseActivity implements View.OnClickListener{
     private TMSHeadView headView;
-    private WebView webview;
-    private TextView textView;
+    private OrderDetialPageAdapter mAdapter;
     printer mPrinter = new printer();
-    String url;
     private SubmitInvoiceInfo mSubmitInvoiceInfo;
+    private ArrayList<WebView> mViewList;
+    private ViewPager mVp;
+    private ImageView nextPageIv;
+    private ImageView previousPageIv;
+    private String sunUrl;
+    private WebView sunWebview;
+    private TextView textView;
+    String url;
+    private WebView webview;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,7 +78,6 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
 
     @Override
     public void initView() {
-
         // 2.2版本以上服务器取数据冲突解决办法========start=========
         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites()
                 .detectNetwork() // or
@@ -79,16 +91,22 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 .detectLeakedSqlLiteObjects().penaltyLog().penaltyDeath().build());
 
         textView = findViewById(R.id.test_print_tv);
-        webview = (WebView) findViewById(R.id.test_print_wv);
         headView = findViewById(R.id.test_print_headview);
+        previousPageIv = (ImageView) findViewById(R.id.test_previous_page);
+        nextPageIv = (ImageView) findViewById(R.id.test_next_page);
+        textView = (TextView) findViewById(R.id.test_print_tv);
+        headView = (TMSHeadView) findViewById(R.id.test_print_headview);
+        mVp = (ViewPager) findViewById(R.id.test_print_vp);
     }
 
     @Override
     public void setListener() {
+        previousPageIv.setOnClickListener(this);
+        nextPageIv.setOnClickListener(this);
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                TestPrintWebActivity.this.runOnUiThread(new Runnable() {
+                runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         try {
@@ -99,7 +117,6 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                             Canvas can = new Canvas(bitmap);
                             pic.draw(can);
                             stroageBitmap(bitmap);
-
                             int newWidth = nw;
                             int newHeight = nh;
                             if (nw > 400) {
@@ -112,10 +129,28 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                             Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
                             stroageBitmap(newBitmap);
                             mPrinter.PrintBitmap(newBitmap);
-
                             mPrinter.printBlankLine(40);
+                            if (sunUrl != null && !sunUrl.equals("")) {
+                                Picture sunpic = sunWebview.capturePicture();
+                                int sunnw = sunpic.getWidth();
+                                int sunnh = sunpic.getHeight();
+                                Bitmap sunbitmap = Bitmap.createBitmap(sunnw, sunnh, Bitmap.Config.ARGB_4444);
+                                Canvas canvas = new Canvas(sunbitmap);
+                                sunpic.draw(canvas);
+                                stroageBitmap(sunbitmap);
+                                int sunnewWidth = sunnw;
+                                int sunnewHeight = sunnh;
+                                if (sunnw > 400) {
+                                    sunnewWidth = 400;
+                                    sunnewHeight = (int) (((float) sunnh) * (400.0f / ((float) sunnw)) * 1.0f);
+                                }
+                                Bitmap sunnewBitmap = Bitmap.createBitmap(Bitmap.createScaledBitmap(sunbitmap, sunnewWidth, sunnewHeight, true), 0, 0, 399, sunnewHeight);
+                                stroageBitmap(sunnewBitmap);
+                                mPrinter.PrintBitmap(sunnewBitmap);
+                                mPrinter.printBlankLine(40);
+                            }
+
                             headView.leftTv.setVisibility(View.GONE);
-                            headView.setRightText("結束", TestPrintWebActivity.this);
                         } catch (Exception e) {
                             e.printStackTrace();
                         } catch (Error error) {
@@ -131,6 +166,15 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
     public void initData() {
         //headView.setLeft(this);
         headView.setTitle("訂單審核");
+        headView.setRightText("結束", TestPrintWebActivity.this);
+        mViewList = new ArrayList<>();
+        LayoutInflater layoutInflater = getLayoutInflater();
+        try {
+            printer printer = mPrinter;
+            printer.Open();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         List<SubmitInvoiceInfo> all = null;
         try {
             all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
@@ -139,17 +183,57 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 mSubmitInvoiceInfo = info;
             }
 
-            //mSubmitInvoiceInfo = new Gson().fromJson(getIntent().getStringExtra("SubmitInvoiceInfo"), SubmitInvoiceInfo.class);
-            // 设置WebView属性，能够执行Javascript脚本
+            webview = new WebView(this);
             WebSettings settings = webview.getSettings();
             settings.setJavaScriptEnabled(true);
             settings.setPluginState(WebSettings.PluginState.ON);
-            //settings.setPluginsEnabled(true);
             webview.setWebViewClient(new MvtFlashWebViewClient());
-            // 截图用
             webview.setDrawingCacheEnabled(true);
-            // 自适应屏幕大小
+            settings.setLoadWithOverviewMode(true);
+            if (mSubmitInvoiceInfo.getInvoiceNo() != null) {
+                url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(TMSCommonUtils.creatBarcode(this, TMSCommonUtils.ean8(mSubmitInvoiceInfo.getInvoiceNo()), 160, 60, false)), true);
+            } else {
+                url = "file:///" + testCreateHTML("", true);
+            }
+            webview.loadUrl(url);
+            mViewList.add(webview);
+            if (mSubmitInvoiceInfo.getSunRefrence() != null) {
+                nextPageIv.setVisibility(View.VISIBLE);
+                sunWebview = new WebView(this);
+                WebSettings sunSettings = sunWebview.getSettings();
+                sunSettings.setJavaScriptEnabled(true);
+                sunSettings.setPluginState(WebSettings.PluginState.ON);
+                sunWebview.setWebViewClient(new MvtFlashWebViewClient());
+                sunWebview.setDrawingCacheEnabled(true);
+                sunSettings.setLoadWithOverviewMode(true);
+                try {
+                    printer printer2 = mPrinter;
+                    printer.Open();
+                } catch (Exception e2) {
+                    e2.printStackTrace();
+                }
+                if (mSubmitInvoiceInfo.getSunInvoiceNo() != null) {
+                    sunUrl = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(TMSCommonUtils.creatBarcode(this, TMSCommonUtils.ean8(mSubmitInvoiceInfo.getSunInvoiceNo()), 160, 60, false)), false);
+                } else {
+                    sunUrl = "file:///" + testCreateHTML("", false);
+                }
+                sunWebview.loadUrl(sunUrl);
+                mViewList.add(sunWebview);
+            }
+            mAdapter = new OrderDetialPageAdapter(mViewList);
+            mVp.setAdapter(mAdapter);
+            mVp.setCurrentItem(0);
 
+            //mSubmitInvoiceInfo = new Gson().fromJson(getIntent().getStringExtra("SubmitInvoiceInfo"), SubmitInvoiceInfo.class);
+            // 设置WebView属性，能够执行Javascript脚本
+            /*WebSettings settings = refundWebview.getSettings();
+            settings.setJavaScriptEnabled(true);
+            settings.setPluginState(WebSettings.PluginState.ON);
+            //settings.setPluginsEnabled(true);
+            refundWebview.setWebViewClient(new MvtFlashWebViewClient());
+            // 截图用
+            refundWebview.setDrawingCacheEnabled(true);
+            // 自适应屏幕大小
             settings.setLoadWithOverviewMode(true);
 
             try {
@@ -164,8 +248,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(bm));// 载入本地生成的页面
             } else {
                 url = "file:///" + testCreateHTML("");// 载入本地生成的页面
-            }
-            webview.loadUrl(url);
+            }*/
         } catch (Exception e) {
             TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.initData():" + e.getStackTrace().toString() + "\n" + e.getMessage().toString(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             Log.d("訂單查詢失敗", "訂單查詢失敗" + String.valueOf(e.getStackTrace()));
@@ -184,21 +267,20 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 webview.loadUrl("javascript:canvasMouseMove(" + event.getX() + "," + event.getY() + ")");
                 return true;
             } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                // webview.loadUrl("javascript:canvasMouseDown("+event.getX()+","+event.getY()+")");
+                // refundWebview.loadUrl("javascript:canvasMouseDown("+event.getX()+","+event.getY()+")");
                 return true;
             }
             return false;
         }
-
     }
 
-    public String testCreateHTML(String barCodeImagePath) {
+    public String testCreateHTML(String barCodeImagePath, boolean isMother) {
         List<DeliverInvoiceModel> mDeliverInvoiceModelList = new Gson().fromJson(mSubmitInvoiceInfo.getOrderBody(), new TypeToken<List<DeliverInvoiceModel>>() {}.getType());
         List<CustomerInfo> all = null;
         String customerName = "";
         try {
             all = TMSApplication.db.selector(CustomerInfo.class).where("customerID","=",mSubmitInvoiceInfo.getCustomerID()).findAll();
-            for(CustomerInfo customerInfo : all){
+            for(CustomerInfo customerInfo : all)      {
                 customerName = customerInfo.getCustomerName();
             }
         } catch (DbException e) {
@@ -206,7 +288,12 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
             e.printStackTrace();
         }
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
-        ToHtml.convert(mSubmitInvoiceInfo.getInvoiceNo(),mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this);
+        if (isMother) {
+            ToHtml.convert(mSubmitInvoiceInfo.getInvoiceNo(), mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this, isMother);
+        } else {
+            ToHtml.convert(mSubmitInvoiceInfo.getSunInvoiceNo(), mSubmitInvoiceInfo.getSunRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this, isMother);
+        }
+        //ToHtml.convert(mSubmitInvoiceInfo.getInvoiceNo(),mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this);
         return path;
     }
 
@@ -255,8 +342,6 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
         @Override
         public void onPageFinished(WebView view, String url) {
             // TODO Auto-generated method stub
-
-
             super.onPageFinished(view, url);
         }
     }
@@ -269,6 +354,14 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
             finish();
         } else if (v.getId() == R.id.head_left){
             finish();
+        } else if (v.getId() == R.id.test_previous_page) {
+            this.previousPageIv.setVisibility(View.GONE);
+            this.nextPageIv.setVisibility(View.VISIBLE);
+            this.mVp.setCurrentItem(0);
+        } else if (v.getId() == R.id.test_next_page) {
+            this.previousPageIv.setVisibility(View.VISIBLE);
+            this.nextPageIv.setVisibility(View.GONE);
+            this.mVp.setCurrentItem(1);
         }
     }
 

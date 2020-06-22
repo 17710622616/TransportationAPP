@@ -1,5 +1,6 @@
 package com.youcoupon.john_li.transportationapp.TMSActivity;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -9,7 +10,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.RequiresApi;
 import android.telephony.TelephonyManager;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +18,8 @@ import android.widget.GridView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -30,10 +32,13 @@ import com.youcoupon.john_li.transportationapp.TMSDBInfo.ClockInPhotoInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CustomerInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceStateInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialCorrespondenceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialNumberInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.InvoiceViewModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.MaterialCorrespondenceModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.PostPhotoService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
@@ -83,6 +88,15 @@ public class MainActivity extends BaseActivity {
 
                     if (!b) {
                         if (dialog != null) {
+                            if (dialog.isShowing()) {
+                                dialog.dismiss();
+                            }
+                        }
+                    }
+                    break;
+                case 2:
+                    if (dialog != null) {
+                        if (dialog.isShowing()) {
                             dialog.dismiss();
                         }
                     }
@@ -90,6 +104,7 @@ public class MainActivity extends BaseActivity {
             }
         }
     };
+    @SuppressLint("MissingPermission")
     @RequiresApi(api = 26)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,6 +122,8 @@ public class MainActivity extends BaseActivity {
         updateStatus = new HashMap<>();
         updateStatus.put("40CsutomerStatus", false);
         updateStatus.put("40InovieStatus", false);
+        updateStatus.put("40MaterialStatus", false);
+        updateStatus.put("40MaterialCorrespondenceStatus", false);
         updateStatus.put("72CustomerStatus", false);
         updateStatus.put("72OrderStatus", false);
         String loginMsg = String.valueOf(SpuUtils.get(this, "loginMsg", ""));
@@ -118,39 +135,35 @@ public class MainActivity extends BaseActivity {
                 if (model.getLoginTime().equals(TMSCommonUtils.getTimeToday())) { // 當有登錄記錄的情況下，判斷是否是今天登錄的
                     TMSShareInfo.mUserModelList.add(model);
                     flag = true;
-                    if (model.getCorp().equals("40") || model.getCorp().equals("xx") || model.getCorp().equals("72")){      // 40：可乐，72：BLS OK
+                    if (model.getCorp().equals("40") || model.getCorp().equals("XX") || model.getCorp().equals("72")){      // 40：可乐，72：BLS OK
                         cachModel = model;
                     }
                 }
             }
 
+            // 為當天登錄信息
             if (flag) {
                 if (cachModel != null) {
                     if (cachModel.getCorp().equals("40")) {
-                        if (cachModel.isCustomerTbStatus() && cachModel.isInvoiceTbStatus()) {    // 當是为40时今天時判斷上次是否更新完全cachModel.isMaterialTbStatus()和isInvoiceTbStatus()
+                        // 當是为40时今天時判斷上次是否更新完全cachModel.isMaterialTbStatus()和isInvoiceTbStatus()
+                        if (cachModel.isCustomerTbStatus() && cachModel.isInvoiceTbStatus() && cachModel.isMaterialTbStatus() && cachModel.isMaterialCorrespondenceTbStatus()) {
                             initView();
                             setListener();
                             initData();
                             TMSApplication.setDebug(false);
                         } else {
-                            // 當是今天，但上次更新有失敗的情況則再次更新
-                            try {
-                                TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
-                                TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
-                                TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
-                            } catch (DbException e) {
-                                e.printStackTrace();
-                            }
-
-                            // 判断需要更新资料的公司，分别由40、72、xx
+                            // 當是今天，但上次更新有失敗的情況則再次更新,但不刪除業務資料
+                            // 判断需要更新资料的公司，分别由40、72、XX
                             dialog = new ProgressDialog(MainActivity.this);
                             dialog.setTitle("提示");
                             dialog.setMessage("正在更新資料......");
                             dialog.setCancelable(false);
                             dialog.show();
-                            forcedUpdate40Data();
+                            update40CustomerData();
+                            updateMaterialData();
+                            updateMaterialCorrespondenceData();
                             updateInovieData();
-                            getMaterilList();
+                            //getMaterilList();
                         }
                     } else if (cachModel.getCorp().equals("72")){   // 當是为72时今天時判斷上次是否更新完全cachModel.isMaterialTbStatus()和isInvoiceTbStatus()
                         if (cachModel.isClockInCustomerTbStatus() && cachModel.isClockInOrderSatusTbStatus()) {    // 當是为72时今天時判斷上次是否更新完全cachModel.isClockInCustomerTbStatus()和isClockInOrderSatusTbStatus()
@@ -161,12 +174,14 @@ public class MainActivity extends BaseActivity {
                         } else {
                             // 當是今天，但上次更新有失敗的情況則再次更新
                             try {
+                                TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
+                                TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
                                 TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
                             } catch (DbException e) {
                                 e.printStackTrace();
                             }
 
-                            // 判断需要更新资料的公司，分别由40、72、xx
+                            // 判断需要更新资料的公司，分别由40、72、XX
                             dialog = new ProgressDialog(MainActivity.this);
                             dialog.setTitle("提示");
                             dialog.setMessage("正在更新資料......");
@@ -175,31 +190,25 @@ public class MainActivity extends BaseActivity {
                             forcedUpdate72Data();
                             update72CustomerData();
                         }
-                    } else {    //为xx测试公司
+                    } else {    //为XX测试公司
                         if (cachModel.isCustomerTbStatus() && cachModel.isInvoiceTbStatus() && cachModel.isClockInCustomerTbStatus() && cachModel.isClockInOrderSatusTbStatus() ) {    // 當是为40时今天時判斷上次是否更新完全cachModel.isMaterialTbStatus()和isInvoiceTbStatus()
                             initView();
                             setListener();
                             initData();
                         } else {
                             // 當是今天，但上次更新有失敗的情況則再次更新
-                            try {
-                                TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
-                                TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
-                                TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
-                                TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-                            } catch (DbException e) {
-                                e.printStackTrace();
-                            }
-
-                            // 判断需要更新资料的公司，分别由40、72、xx
+                            // 判断需要更新资料的公司，分别由40、72、XX
                             dialog = new ProgressDialog(MainActivity.this);
                             dialog.setTitle("提示");
                             dialog.setMessage("正在更新資料......");
                             dialog.setCancelable(false);
                             dialog.show();
-                            forcedUpdate40Data();
+                            update40CustomerData();
+                            updateMaterialData();
+                            updateMaterialCorrespondenceData();
                             updateInovieData();
-                            getMaterilList();
+                            //getMaterilList();
+
                             forcedUpdate72Data();
                             update72CustomerData();
                         }
@@ -212,10 +221,28 @@ public class MainActivity extends BaseActivity {
                     TMSApplication.setDebug(false);
                 }
             } else {
+                // 當不是當天的登錄資料，清除資料並重新登錄
+                try {
+                    TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
+                    TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
+                    TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
+                    TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
+                } catch (DbException e) {
+                    e.printStackTrace();
+                }
                 SpuUtils.put(this, "loginMsg", "");
                 startActivityForResult(new Intent(MainActivity.this, LoginActivity.class), 1);
             }
         } else {
+            // 當不是當天的登錄資料，清除資料並重新登錄
+            try {
+                TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
+                TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
+                TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
+                TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
+            } catch (DbException e) {
+                e.printStackTrace();
+            }
             SpuUtils.put(this, "loginMsg", "");
             startActivityForResult(new Intent(MainActivity.this, LoginActivity.class), 1);
         }
@@ -282,10 +309,10 @@ public class MainActivity extends BaseActivity {
      * 初始化菜單項
      */
     private void initMenu() {
-        menuList.add("送/收貨");
-        menuList.add("今日訂單");
-        menuList.add("結算");
-        menuList.add("發票狀態");
+        menuList.add("物料回收");
+        menuList.add("業務審核");
+        menuList.add("物料結算");
+        menuList.add("客戶簽收");
         menuList.add("切換公司");
         menuList.add("數據更新");
         menuList.add("OK簽到");
@@ -296,7 +323,7 @@ public class MainActivity extends BaseActivity {
     /**
      * 上次有更新失敗情況，強制要求更新
      */
-    private void forcedUpdate40Data() {
+    private void update40CustomerData() {
         updateStatus.put("40CsutomerStatus", true);
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
@@ -318,7 +345,7 @@ public class MainActivity extends BaseActivity {
                         String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
                         List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
                         for (int i = 0; i < mUserModelList.size(); i++) {
-                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("xx")) {
+                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("XX")) {
                                 mUserModelList.get(i).setCustomerTbStatus(true);
                                 TMSShareInfo.mUserModelList.get(i).setCustomerTbStatus(true);
                                 SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
@@ -351,7 +378,7 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onFinished() {
                 updateStatus.put("40CsutomerStatus", false);
-                mHandle.sendEmptyMessageDelayed(1, 5000);
+                mHandle.sendEmptyMessageDelayed(2, 60 * 1000);
             }
         });
     }
@@ -371,14 +398,25 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        List<InvoiceInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<InvoiceInfo>>() {}.getType());
+                        List<InvoiceViewModel> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<InvoiceViewModel>>() {}.getType());
+                        //ViewModel转Model
+                        List<InvoiceInfo> infos = new ArrayList<>();
+                        for (InvoiceViewModel model : list) {
+                            InvoiceInfo info = new InvoiceInfo();
+                            //info.setId(model.getHeader().getInvoiceNo());
+                            info.setInvoiceNo(model.getHeader().getInvoiceNo());
+                            info.setCustomerID(model.getHeader().getCustomerID());
+                            info.setRemark(model.getHeader().getRemark());
+                            info.setLines(new Gson().toJson(model.getLineList()));
+                            infos.add(info);
+                        }
                         //用集合向child_info表中插入多条数据
                         //db.save()方法不仅可以插入单个对象，还能插入集合
-                        TMSApplication.db.save(list);
+                        TMSApplication.db.save(infos);
                         String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
                         List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
                         for (int i = 0; i < mUserModelList.size(); i++) {
-                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("xx")) {
+                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("XX")) {
                                 mUserModelList.get(i).setInvoiceTbStatus(true);
                                 TMSShareInfo.mUserModelList.get(i).setInvoiceTbStatus(true);
                                 SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
@@ -416,6 +454,154 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    private void updateMaterialData() {
+        updateStatus.put("40MaterialStatus", true);
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSCommonUtils.getUserFor72(this).getCorp());
+        paramsMap.put("userid", TMSCommonUtils.getUserFor72(this).getID());
+        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_MATERIAL_LIST + TMSCommonUtils.createLinkStringByGet(paramsMap));
+        params.setConnectTimeout(30 * 1000);
+        String uri = params.getUri();
+        x.http().get(params, new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
+                if (commonModel.getCode() == 0) {
+                    try {
+                        List<MaterialNumberInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<MaterialNumberInfo>>() {}.getType());
+
+                        // 當就資料中存在就直接寫入新資料列表中，保證更新時不會剔除原來的數量
+                        List<MaterialNumberInfo> all = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
+                        if(all != null) {
+                            for(MaterialNumberInfo info :all){
+                                for(MaterialNumberInfo newInfo :list) {
+                                    if (newInfo.getMaterialID().equals(info.getMaterialID())) {
+                                        newInfo.setMaterialRefundNum(info.getMaterialRefundNum());
+                                        newInfo.setMaterialDepositeNum(info.getMaterialDepositeNum());
+                                    }
+                                }
+                            }
+                        }
+
+                        TMSApplication.db.delete(MaterialNumberInfo.class);
+
+                        //用集合向child_info表中插入多条数据
+                        //db.save()方法不仅可以插入单个对象，还能插入集合
+                        TMSApplication.db.save(list);
+                        String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
+                        List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
+                        for (int i = 0; i < mUserModelList.size(); i++) {
+                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("XX")) {
+                                mUserModelList.get(i).setMaterialTbStatus(true);
+                                TMSShareInfo.mUserModelList.get(i).setMaterialTbStatus(true);
+                                SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
+                            }
+                        }
+                        Toast.makeText(MainActivity.this, "獲取物料資料成功！", Toast.LENGTH_SHORT).show();
+                    } catch (DbException e) {
+                        Toast.makeText(MainActivity.this, "獲取物料資料失敗！", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "獲取物料資料失敗！", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                if (ex instanceof java.net.SocketTimeoutException) {
+                    Toast.makeText(MainActivity.this, "獲取物料資料網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "獲取物料資料失敗！", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+
+            }
+
+            @Override
+            public void onFinished() {
+                updateStatus.put("40MaterialStatus", false);
+                mHandle.sendEmptyMessageDelayed(1, 5000);
+                initView();
+                setListener();
+                initData();
+            }
+        });
+    }
+
+    private void updateMaterialCorrespondenceData() {
+        updateStatus.put("40MaterialCorrespondenceStatus", true);
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSCommonUtils.getUserFor72(this).getCorp());
+        paramsMap.put("userid", TMSCommonUtils.getUserFor72(this).getID());
+        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_MATERIAL_CORRESPONDENCE_LIST + TMSCommonUtils.createLinkStringByGet(paramsMap));
+        params.setConnectTimeout(30 * 1000);
+        String uri = params.getUri();
+        x.http().get(params, new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
+                if (commonModel.getCode() == 0) {
+                    try {
+                        List<MaterialCorrespondenceModel> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<MaterialCorrespondenceModel>>() {}.getType());
+                        //Model轉ViewModel
+                        List<MaterialCorrespondenceInfo> infoList = new ArrayList<>();
+                        for (MaterialCorrespondenceModel model : list) {
+                            MaterialCorrespondenceInfo info = new MaterialCorrespondenceInfo();
+                            info.setMerchandiseID(model.getMerchandiseID());
+                            info.setMaterialListJson(new Gson().toJson(model.getMaterial()));
+                            infoList.add(info);
+                        }
+                        //用集合向child_info表中插入多条数据
+                        //db.save()方法不仅可以插入单个对象，还能插入集合
+                        TMSApplication.db.save(infoList);
+                        String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
+                        List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
+                        for (int i = 0; i < mUserModelList.size(); i++) {
+                            if (mUserModelList.get(i).getCorp().equals("40") || mUserModelList.get(i).getCorp().equals("XX")) {
+                                mUserModelList.get(i).setMaterialCorrespondenceTbStatus(true);
+                                TMSShareInfo.mUserModelList.get(i).setMaterialCorrespondenceTbStatus(true);
+                                SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
+                            }
+                        }
+                        Toast.makeText(MainActivity.this, "獲取物料關係資料成功！", Toast.LENGTH_SHORT).show();
+                    } catch (DbException e) {
+                        Toast.makeText(MainActivity.this, "獲取物料關係資料失敗！", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "獲取物料關係資料失敗！", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                if (ex instanceof java.net.SocketTimeoutException) {
+                    Toast.makeText(MainActivity.this, "獲取物料關係資料網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "獲取物料關係資料失敗！", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+
+            }
+
+            @Override
+            public void onFinished() {
+                updateStatus.put("40MaterialCorrespondenceStatus", false);
+                mHandle.sendEmptyMessageDelayed(1, 5000);
+                initView();
+                setListener();
+                initData();
+            }
+        });
+    }
+
     private void forcedUpdate72Data() {
         updateStatus.put("72OrderStatus", true);
         Map<String, String> paramsMap = new HashMap<>();
@@ -440,7 +626,7 @@ public class MainActivity extends BaseActivity {
                         String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
                         List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
                         for (int i = 0; i < mUserModelList.size(); i++) {
-                            if (mUserModelList.get(i).getCorp().equals("72") || mUserModelList.get(i).getCorp().equals("xx")) {
+                            if (mUserModelList.get(i).getCorp().equals("72") || mUserModelList.get(i).getCorp().equals("XX")) {
                                 mUserModelList.get(i).setClockInOrderSatusTbStatus(true);
                                 TMSShareInfo.mUserModelList.get(i).setClockInOrderSatusTbStatus(true);
                                 SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
@@ -500,7 +686,7 @@ public class MainActivity extends BaseActivity {
                         String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
                         List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
                         for (int i = 0; i < mUserModelList.size(); i++) {
-                            if (mUserModelList.get(i).getCorp().equals("72") || mUserModelList.get(i).getCorp().equals("xx")) {
+                            if (mUserModelList.get(i).getCorp().equals("72") || mUserModelList.get(i).getCorp().equals("XX")) {
                                 mUserModelList.get(i).setClockInCustomerTbStatus(true);
                                 TMSShareInfo.mUserModelList.get(i).setClockInCustomerTbStatus(true);
                                 SpuUtils.put(MainActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
@@ -549,41 +735,47 @@ public class MainActivity extends BaseActivity {
             TMSApplication.db.delete(MaterialNumberInfo.class);
             // 初始化物料总数
             MaterialNumberInfo materialNumberInfo = new MaterialNumberInfo();
-            materialNumberInfo.setMaterialId("013A");
+            materialNumberInfo.setMaterialID("013A");
             materialNumberInfo.setMaterialName("木卡板");
             materialNumberInfo.setMaterialRefundNum(0);
             materialNumberInfo.setMaterialDepositeNum(0);
             TMSApplication.db.save(materialNumberInfo);
             MaterialNumberInfo materialNumberInfo1 = new MaterialNumberInfo();
-            materialNumberInfo1.setMaterialId("013B");
+            materialNumberInfo1.setMaterialID("013B");
             materialNumberInfo1.setMaterialName("膠卡板(大)");
             materialNumberInfo1.setMaterialRefundNum(0);
             materialNumberInfo.setMaterialDepositeNum(0);
             TMSApplication.db.save(materialNumberInfo1);
             MaterialNumberInfo materialNumberInfo2 = new MaterialNumberInfo();
-            materialNumberInfo2.setMaterialId("013D");
+            materialNumberInfo2.setMaterialID("013D");
             materialNumberInfo2.setMaterialName("專用膠卡板");
             materialNumberInfo2.setMaterialRefundNum(0);
             materialNumberInfo.setMaterialDepositeNum(0);
             TMSApplication.db.save(materialNumberInfo2);
             MaterialNumberInfo materialNumberInfo3 = new MaterialNumberInfo();
-            materialNumberInfo3.setMaterialId("013C");
+            materialNumberInfo3.setMaterialID("013C");
             materialNumberInfo3.setMaterialName("膠片(5加侖)");
             materialNumberInfo3.setMaterialRefundNum(0);
             materialNumberInfo.setMaterialDepositeNum(0);
             TMSApplication.db.save(materialNumberInfo3);
             MaterialNumberInfo materialNumberInfo4 = new MaterialNumberInfo();
-            materialNumberInfo4.setMaterialId("014");
+            materialNumberInfo4.setMaterialID("014");
             materialNumberInfo4.setMaterialName("5加侖吉膠桶");
             materialNumberInfo4.setMaterialRefundNum(0);
             materialNumberInfo.setMaterialDepositeNum(0);
             TMSApplication.db.save(materialNumberInfo4);
             MaterialNumberInfo materialNumberInfo5 = new MaterialNumberInfo();
-            materialNumberInfo5.setMaterialId("015");
+            materialNumberInfo5.setMaterialID("015");
             materialNumberInfo5.setMaterialName("飛雪吉膠箱");
             materialNumberInfo5.setMaterialRefundNum(0);
             materialNumberInfo.setMaterialDepositeNum(0);
             TMSApplication.db.save(materialNumberInfo5);
+            MaterialNumberInfo materialNumberInfo6 = new MaterialNumberInfo();
+            materialNumberInfo6.setMaterialID("013E");
+            materialNumberInfo6.setMaterialName("綠色膠卡板");
+            materialNumberInfo6.setMaterialRefundNum(0);
+            materialNumberInfo6.setMaterialDepositeNum(0);
+            TMSApplication.db.save(materialNumberInfo6);
         } catch (DbException e) {
 
         }
@@ -620,15 +812,17 @@ public class MainActivity extends BaseActivity {
                                     e.printStackTrace();
                                 }
 
-                                // 判断需要更新资料的公司，分别由40、72、xx
+                                // 判断需要更新资料的公司，分别由40、72、XX
                                 dialog = new ProgressDialog(MainActivity.this);
                                 dialog.setTitle("提示");
                                 dialog.setMessage("正在更新資料......");
                                 dialog.setCancelable(false);
                                 dialog.show();
-                                forcedUpdate40Data();
+                                update40CustomerData();
+                                updateMaterialData();
+                                updateMaterialCorrespondenceData();
                                 updateInovieData();
-                                getMaterilList();
+                                //getMaterilList();
                             }
                         } else if (model.getCorp().equals("72")) {
                             if (model.isClockInOrderSatusTbStatus() && model.isClockInCustomerTbStatus()) {    // 當是今天時判斷上次是否更新完全 && cachModel.isMaterialTbStatus()
@@ -646,7 +840,7 @@ public class MainActivity extends BaseActivity {
                                 forcedUpdate72Data();
                                 update72CustomerData();
                             }
-                        } else if (model.getCorp().equals("xx")) {
+                        } else if (model.getCorp().equals("XX")) {
                             if (model.isCustomerTbStatus() && model.isInvoiceTbStatus() && model.isClockInCustomerTbStatus() && model.isClockInOrderSatusTbStatus() ) {    // 當是为40时今天時判斷上次是否更新完全cachModel.isMaterialTbStatus()和isInvoiceTbStatus()
                                 initView();
                                 setListener();
@@ -661,15 +855,17 @@ public class MainActivity extends BaseActivity {
                                 } catch (DbException e) {
                                     e.printStackTrace();
                                 }
-                                // 判断需要更新资料的公司，分别由40、72、xx
+                                // 判断需要更新资料的公司，分别由40、72、XX
                                 dialog = new ProgressDialog(MainActivity.this);
                                 dialog.setTitle("提示");
                                 dialog.setMessage("正在更新資料......");
                                 dialog.setCancelable(false);
                                 dialog.show();
-                                forcedUpdate40Data();
+                                update40CustomerData();
+                                updateMaterialData();
+                                updateMaterialCorrespondenceData();
                                 updateInovieData();
-                                getMaterilList();
+                                //getMaterilList();
                                 forcedUpdate72Data();
                                 update72CustomerData();
                             }
@@ -710,7 +906,7 @@ public class MainActivity extends BaseActivity {
         List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         boolean flag = false;
         for (UserModel model : userModelList) {
-            if (model.getCorp().equals("40") ||model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("40") ||model.getCorp().equals("XX")) {
                 flag = true;
             }
         }
@@ -726,7 +922,7 @@ public class MainActivity extends BaseActivity {
         List<UserModel> userModelList1 = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         boolean flag1 = false;
         for (UserModel model : userModelList1) {
-            if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("40") || model.getCorp().equals("XX")) {
                 flag1 = true;
             }
         }
@@ -742,7 +938,7 @@ public class MainActivity extends BaseActivity {
         List<UserModel> userModelList2 = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         boolean flag2 = false;
         for (UserModel model : userModelList2) {
-            if (model.getCorp().equals("40") || model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("40") || model.getCorp().equals("XX")) {
                 flag2 = true;
             }
         }
@@ -789,7 +985,7 @@ public class MainActivity extends BaseActivity {
         List<UserModel> modelList = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         boolean flag3 = false;
         for (UserModel model : modelList) {
-            if (model.getCorp().equals("40") || model.getCorp().equals("xx") || model.getCorp().equals("72")) {
+            if (model.getCorp().equals("40") || model.getCorp().equals("XX") || model.getCorp().equals("72")) {
                 flag3 = true;
             }
         }
@@ -798,19 +994,21 @@ public class MainActivity extends BaseActivity {
             Toast.makeText(MainActivity.this, "請先登錄澳門可口可樂飲料有限公司或澳門Circle-K賬戶！", Toast.LENGTH_SHORT).show();
         } else {
             if (TMSCommonUtils.getUserForXX(MainActivity.this) != null) {
-                // 判断需要更新资料的公司，分别由40、72、xx
+                // 判断需要更新资料的公司，分别由40、72、XX
                 dialog = new ProgressDialog(MainActivity.this);
                 dialog.setTitle("提示");
                 dialog.setMessage("正在更新資料......");
                 dialog.setCancelable(false);
                 dialog.show();
-                forcedUpdate40Data();
+                update40CustomerData();
+                updateMaterialData();
+                updateMaterialCorrespondenceData();
                 updateInovieData();
-                getMaterilList();
+                //getMaterilList();
                 forcedUpdate72Data();
                 update72CustomerData();
             } else if (TMSCommonUtils.getUserFor72(MainActivity.this) != null){
-                // 判断需要更新资料的公司，分别由40、72、xx
+                // 判断需要更新资料的公司，分别由40、72、XX
                 dialog = new ProgressDialog(MainActivity.this);
                 dialog.setTitle("提示");
                 dialog.setMessage("正在更新資料......");
@@ -819,15 +1017,17 @@ public class MainActivity extends BaseActivity {
                 forcedUpdate72Data();
                 update72CustomerData();
             } else {
-                // 判断需要更新资料的公司，分别由40、72、xx
+                // 判断需要更新资料的公司，分别由40、72、XX
                 dialog = new ProgressDialog(MainActivity.this);
                 dialog.setTitle("提示");
                 dialog.setMessage("正在更新資料......");
                 dialog.setCancelable(false);
                 dialog.show();
-                forcedUpdate40Data();
+                update40CustomerData();
+                updateMaterialData();
+                updateMaterialCorrespondenceData();
                 updateInovieData();
-                getMaterilList();
+                //getMaterilList();
             }
         }
     }
@@ -836,7 +1036,7 @@ public class MainActivity extends BaseActivity {
         List<UserModel> userList = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         boolean flag4 = false;
         for (UserModel model : userList) {
-            if (model.getCorp().equals("72") ||model.getCorp().equals("xx")) {
+            if (model.getCorp().equals("72") ||model.getCorp().equals("XX")) {
                 flag4 = true;
             }
         }

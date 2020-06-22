@@ -17,9 +17,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -27,6 +24,10 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.core.content.FileProvider;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -245,8 +246,8 @@ public class LoginActivity extends BaseActivity {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,
                                                 int whichButton) {
-                                // 点击"取消"按钮之后退出程序
-                                System.exit(0);
+                                // 点击"取消"按钮之后退出程
+                                // System.exit(0);
                             }
                         }).create();// 创建
 
@@ -414,11 +415,11 @@ public class LoginActivity extends BaseActivity {
                             TMSShareInfo.mUserModelList.add(0,model);
                         }
                         SpuUtils.put(LoginActivity.this, "loginMsg", new Gson().toJson(mUserModelList));
-                        if (model.getCorp().equals("xx")) {
+                        if (model.getCorp().equals("XX")) {
                             TMSApplication.setDebug(true);
                         }
                     } else {
-                        List<UserModel> mUserModelList = new ArrayList<UserModel>();
+                        List<UserModel> mUserModelList = new ArrayList   <UserModel>();
                         model.setLoginTime(TMSCommonUtils.getTimeToday());
                         mUserModelList.add(0,model);
                         TMSShareInfo.mUserModelList.add(0,model);
@@ -436,6 +437,7 @@ public class LoginActivity extends BaseActivity {
             @Override
             public void onError(Throwable ex, boolean isOnCallback) {
                 progressLL.setVisibility(View.GONE);
+
                 if (ex instanceof java.net.SocketTimeoutException) {
                     Toast.makeText(LoginActivity.this, "網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
                 } else {

@@ -1,12 +1,13 @@
 package com.youcoupon.john_li.transportationapp.TMSView;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
 
 import com.youcoupon.john_li.transportationapp.R;
 

@@ -1,24 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <TextView
-        android:id="@+id/item_main_tv"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="送貨"
-        android:textSize="28sp"
-        android:textColor="@color/color_white"
-        android:gravity="center"
-        android:padding="30dp"
-        android:background="@color/colorPrimary"/>
+        android:background="@drawable/shape_btn">
 
-    <ImageView
-        android:id="@+id/item_main_warming_iv"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:src="@mipmap/warming"
-        android:scaleType="fitXY"
-        android:layout_alignParentRight="true"
-        android:layout_margin="5dp"/>
-</RelativeLayout>
+        <TextView
+            android:id="@+id/item_main_tv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="送貨"
+            android:textSize="28sp"
+            android:textColor="@color/color_white"
+            android:gravity="center"
+            android:padding="30dp"
+            android:background="@color/colorPrimary"/>
+
+        <ImageView
+            android:id="@+id/item_main_warming_iv"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@mipmap/warming"
+            android:scaleType="fitXY"
+            android:layout_alignParentRight="true"
+            android:layout_margin="5dp"/>
+    </RelativeLayout>
+</LinearLayout>

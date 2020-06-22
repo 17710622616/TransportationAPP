@@ -7,7 +7,6 @@ import android.graphics.Picture;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
-import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,6 +16,8 @@ import android.webkit.WebViewClient;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -139,8 +140,8 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
             List<MaterialNumberInfo> all = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
             for(MaterialNumberInfo model : all){
                 DeliverInvoiceModel deliverInvoiceModel = new DeliverInvoiceModel();
-                deliverInvoiceModel.setMaterialId(model.getMaterialId());
-                deliverInvoiceModel.setMaterialName(model.getMaterialName());
+                deliverInvoiceModel.setMaterialId(model.getMaterialID());
+                deliverInvoiceModel.setMaterialName(model.getNameChinese());
                 deliverInvoiceModel.setSendOutNum(model.getMaterialDepositeNum());
                 deliverInvoiceModel.setRecycleNum(model.getMaterialRefundNum());
                 mDeliverInvoiceModelList.add(deliverInvoiceModel);
@@ -183,7 +184,13 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
         model5.setMaterialName("飛雪吉膠箱");
         model5.setSendOutNum(0);
         model5.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model5);*/
+        mDeliverInvoiceModelList.add(model5);
+        MaterialNumberInfo materialNumberInfo6 = new MaterialNumberInfo();
+        materialNumberInfo6.setMaterialId("013E");
+        materialNumberInfo6.setMaterialName("綠色膠卡板");
+        materialNumberInfo6.setMaterialRefundNum(0);
+        materialNumberInfo6.setMaterialDepositeNum(0);
+        TMSApplication.db.save(materialNumberInfo6);*/
     }
 
     @Override
@@ -219,7 +226,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                         } else {
                             depositLine.setQuantity(0);
                         }
-                        depositLine.setMerchandiseID(info.getMaterialId());
+                        depositLine.setMerchandiseID(info.getMaterialID());
                         lineList.add(depositLine);
                     }
                     movementDepositModel.setLines(lineList);
@@ -248,7 +255,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                         } else {
                             refundLine.setQuantity(0);
                         }
-                        refundLine.setMerchandiseID(info.getMaterialId());
+                        refundLine.setMerchandiseID(info.getMaterialID());
                         refundlineList.add(refundLine);
                     }
                     movementRefundModel.setLines(refundlineList);

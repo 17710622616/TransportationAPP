@@ -31,6 +31,16 @@ public class UserModel {
     private boolean clockInOrderSatusTbStatus;
     // 物料表更新狀態
     private boolean materialTbStatus;
+    // 物料關係表更新狀態
+    private boolean materialCorrespondenceTbStatus;
+
+    public boolean isMaterialCorrespondenceTbStatus() {
+        return materialCorrespondenceTbStatus;
+    }
+
+    public void setMaterialCorrespondenceTbStatus(boolean materialCorrespondenceTbStatus) {
+        this.materialCorrespondenceTbStatus = materialCorrespondenceTbStatus;
+    }
 
     public String getDriverID() {
         return DriverID;

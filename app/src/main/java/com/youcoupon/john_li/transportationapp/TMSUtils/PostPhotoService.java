@@ -2,8 +2,9 @@ package com.youcoupon.john_li.transportationapp.TMSUtils;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.support.annotation.Nullable;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.ClockInPhotoInfo;

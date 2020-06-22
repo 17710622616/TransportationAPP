@@ -28,7 +28,7 @@
             android:layout_weight="1"
             android:text="送出"
             android:textColor="@color/color_black"
-            android:textSize="18sp"/>
+            android:textSize="12sp"/>
         <RadioButton
             android:id="@+id/dialog_dg_recycle_rb"
             android:layout_width="0dp"
@@ -36,7 +36,15 @@
             android:layout_weight="1"
             android:text="回收"
             android:textColor="@color/color_black"
-            android:textSize="18sp"/>
+            android:textSize="12sp"/>
+        <RadioButton
+            android:id="@+id/dialog_dg_send_recycle_rb"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.5"
+            android:text="送出及回收"
+            android:textColor="@color/color_black"
+            android:textSize="12sp"/>
     </RadioGroup>
 
     <TextView

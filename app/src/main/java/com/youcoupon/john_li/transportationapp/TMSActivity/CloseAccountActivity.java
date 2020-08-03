@@ -24,11 +24,13 @@ import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CustomerInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceStateInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialCorrespondenceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialNumberInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.MaterialCorrespondenceModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.PostStockMovementModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
@@ -122,7 +124,6 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
         // 截图用
         webview.setDrawingCacheEnabled(true);
         // 自适应屏幕大小
-
         settings.setLoadWithOverviewMode(true);
 
         try {
@@ -201,7 +202,10 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                 break;
             case R.id.close_account_print:
                 try {
+                    // 查询所有物料
                     List<MaterialNumberInfo> materialNumberList = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
+                    List<String> materialList = getHasResponseMatrialList();
+
                     // 按金
                     PostStockMovementModel movementDepositModel = new PostStockMovementModel();
                     PostStockMovementModel.Header depositheader = new PostStockMovementModel.Header();
@@ -220,14 +224,17 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
 
                     List<PostStockMovementModel.Line> lineList = new ArrayList<>();
                     for (MaterialNumberInfo info : materialNumberList) {
-                        PostStockMovementModel.Line depositLine = new PostStockMovementModel.Line();
-                        if (info.getMaterialDepositeNum() != 0) {
-                            depositLine.setQuantity(info.getMaterialDepositeNum());
-                        } else {
-                            depositLine.setQuantity(0);
+                        // 检查是否存在物料关系，存在则不提交
+                        if (!materialList.contains(info.getMaterialID())) {
+                            PostStockMovementModel.Line depositLine = new PostStockMovementModel.Line();
+                            if (info.getMaterialDepositeNum() != 0) {
+                                depositLine.setQuantity(info.getMaterialDepositeNum());
+                            } else {
+                                depositLine.setQuantity(0);
+                            }
+                            depositLine.setMerchandiseID(info.getMaterialID());
+                            lineList.add(depositLine);
                         }
-                        depositLine.setMerchandiseID(info.getMaterialID());
-                        lineList.add(depositLine);
                     }
                     movementDepositModel.setLines(lineList);
 
@@ -277,6 +284,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                             a = false;
                         }
                     }
+
                     if (a) {
                         trainsInfo.setTodayDepositStatus(0);
                     } else {
@@ -458,6 +466,25 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
 
             }
         });
+    }
+
+    private List<String> getHasResponseMatrialList() {
+        List<String> returnMaterialList = new ArrayList<>();
+        try {
+            //查找所有商品的物料关系列表
+            List<MaterialCorrespondenceInfo> materialCorrespondenceList = TMSApplication.db.selector(MaterialCorrespondenceInfo.class).findAll();
+            for (MaterialCorrespondenceInfo info : materialCorrespondenceList) {
+                List<MaterialCorrespondenceModel.CorrespondingMaterial> materialList = new Gson().fromJson(info.getMaterialListJson(), new TypeToken<List<MaterialCorrespondenceModel.CorrespondingMaterial>>() { }.getType());
+                for (MaterialCorrespondenceModel.CorrespondingMaterial correspondingMaterial : materialList) {
+                    returnMaterialList.add(correspondingMaterial.getMaterialID().trim());
+                }
+            }
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+
+        // 去重后返回
+        return TMSCommonUtils.removeDuplicate(returnMaterialList);
     }
 
     public class OnTouchListenerHTML5 implements View.OnTouchListener {

@@ -277,7 +277,7 @@ public class MainActivity extends BaseActivity {
                         changeCorp();
                         break;
                     case 5:
-                        dataUpdate();
+                        showUpdateDialog();
                         break;
                     case 6:
                         circleKClockIn();
@@ -398,7 +398,8 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        List<InvoiceViewModel> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<InvoiceViewModel>>() {}.getType());
+                        String invoiceJson = TMSCommonUtils.decode(commonModel.getData());
+                        List<InvoiceViewModel> list = new Gson().fromJson(invoiceJson, new TypeToken<List<InvoiceViewModel>>() {}.getType());
                         //ViewModel转Model
                         List<InvoiceInfo> infos = new ArrayList<>();
                         for (InvoiceViewModel model : list) {
@@ -468,7 +469,8 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        List<MaterialNumberInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<MaterialNumberInfo>>() {}.getType());
+                        String matrialJson = TMSCommonUtils.decode(commonModel.getData());
+                        List<MaterialNumberInfo> list = new Gson().fromJson(matrialJson, new TypeToken<List<MaterialNumberInfo>>() {}.getType());
 
                         // 當就資料中存在就直接寫入新資料列表中，保證更新時不會剔除原來的數量
                         List<MaterialNumberInfo> all = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
@@ -555,6 +557,9 @@ public class MainActivity extends BaseActivity {
                             info.setMaterialListJson(new Gson().toJson(model.getMaterial()));
                             infoList.add(info);
                         }
+
+                        TMSApplication.db.delete(MaterialCorrespondenceInfo.class);
+
                         //用集合向child_info表中插入多条数据
                         //db.save()方法不仅可以插入单个对象，还能插入集合
                         TMSApplication.db.save(infoList);
@@ -1129,6 +1134,32 @@ public class MainActivity extends BaseActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
                         System.exit(0);
+                    }
+                })
+                .create()
+                .show();
+    }
+
+    /**
+     * 顯示数据更新dialog
+     */
+    private void showUpdateDialog() {
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("系統提示")
+                .setMessage("是否確定更新數據!")
+                .setPositiveButton("確認",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // 啟動更新界面
+                                dataUpdate();
+                                dialog.dismiss();
+                            }
+                        })
+                .setNeutralButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
                     }
                 })
                 .create()

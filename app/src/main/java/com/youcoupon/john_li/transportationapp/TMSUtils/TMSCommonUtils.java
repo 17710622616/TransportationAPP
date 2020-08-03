@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -510,6 +511,17 @@ public class TMSCommonUtils {
         return keyFactory.generateSecret(dks);
     }
 
+    /**
+     * string List去重
+     * @param list
+     */
+    public static List<String> removeDuplicate(List<String> list) {
+        LinkedHashSet<String> set = new LinkedHashSet<String>(list.size());
+        set.addAll(list);
+        list.clear();
+        list.addAll(set);
+        return list;
+    }
 
 
     // 加解密参数

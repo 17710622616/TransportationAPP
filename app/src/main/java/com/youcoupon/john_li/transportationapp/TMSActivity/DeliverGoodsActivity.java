@@ -150,6 +150,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         try {
             List<MaterialNumberInfo> all = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
             if(all != null) {
+                mDeliverInvoiceModelList.clear();
+
                 for(MaterialNumberInfo model : all){
                     DeliverInvoiceModel deliverInvoiceModel = new DeliverInvoiceModel();
                     deliverInvoiceModel.setMaterialId(model.getMaterialID());
@@ -522,6 +524,52 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
     }
 
     /**
+     * 填充發票貨品對應物料
+     * @param invoiceInfo
+     */
+    private void fillInvoiceMaterial(InvoiceInfo invoiceInfo) {
+        // 發票Model轉ViewModel
+        List<InvoiceViewModel.InvoiceLine> lineList = new Gson().fromJson(invoiceInfo.getLines(), new TypeToken<List<InvoiceViewModel.InvoiceLine>>() {}.getType());
+        try {
+            //查找所有商品的物料关系列表
+            List<MaterialCorrespondenceInfo> materialCorrespondenceList = TMSApplication.db.selector(MaterialCorrespondenceInfo.class).findAll();
+            //清楚商品的物料关系列表中的merchandiseID中的空格
+            List<MaterialCorrespondenceModel> materialCorrespondenceModelList = new ArrayList<>();
+            for (MaterialCorrespondenceInfo info : materialCorrespondenceList) {
+                MaterialCorrespondenceModel model = new MaterialCorrespondenceModel();
+                model.setMerchandiseID(info.getMerchandiseID().trim());
+                List<MaterialCorrespondenceModel.CorrespondingMaterial> materialList = new Gson().fromJson(info.getMaterialListJson(), new TypeToken<List<MaterialCorrespondenceModel.CorrespondingMaterial>>() {}.getType());
+                for (MaterialCorrespondenceModel.CorrespondingMaterial correspondingMaterial: materialList) {
+                    correspondingMaterial.setMaterialID(correspondingMaterial.getMaterialID().trim());
+                }
+
+                model.setMaterial(materialList);
+                materialCorrespondenceModelList.add(model);
+            }
+
+            for (InvoiceViewModel.InvoiceLine line: lineList){
+                for (MaterialCorrespondenceModel materialCorrespondenceModel : materialCorrespondenceModelList) {
+                    // 遍历发票，当发票中的商品存在物料关系时
+                    if (line.getMerchandiseID().equals(materialCorrespondenceModel.getMerchandiseID())) {
+                        for (DeliverInvoiceModel model : mDeliverInvoiceModelList){
+                            for (MaterialCorrespondenceModel.CorrespondingMaterial correspondingMaterialModel: materialCorrespondenceModel.getMaterial()) {
+                                if (model.getMaterialId().equals(correspondingMaterialModel.getMaterialID())) {
+                                    model.setSendOutNum(model.getSendOutNum() + ((line.getQuantity() / line.getPacking()) * correspondingMaterialModel.getQuantity()));
+                                    model.setRecycleNum(model.getRecycleNum() + ((line.getQuantity() / line.getPacking()) * correspondingMaterialModel.getQuantity()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            mDeliverGoodsAdapter.notifyDataSetChanged();
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * 有brcode
      * @param code
      */
@@ -546,6 +594,9 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 }
 
                 if (customerInfo != null) {
+                    //清空物料信息
+                    getData();
+
                     mSubmitInvoiceInfo.setCustomerID(customerInfo.getCustomerID());
                     mSubmitInvoiceInfo.setCustomerName(customerInfo.getCustomerName());
                     delivergoods_customer_no.setText(customerInfo.getCustomerID());
@@ -621,46 +672,6 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         }
     }
 
-    // 填充發票貨品對應物料
-    private void fillInvoiceMaterial(InvoiceInfo invoiceInfo) {
-        // 發票Model轉ViewModel
-        List<InvoiceViewModel.InvoiceLine> lineList = new Gson().fromJson(invoiceInfo.getLines(), new TypeToken<List<InvoiceViewModel.InvoiceLine>>() {}.getType());
-        try {
-            List<MaterialCorrespondenceInfo> materialCorrespondenceList = TMSApplication.db.selector(MaterialCorrespondenceInfo.class).findAll();
-            List<MaterialCorrespondenceModel> materialCorrespondenceModelList = new ArrayList<>();
-            for (MaterialCorrespondenceInfo info : materialCorrespondenceList) {
-                MaterialCorrespondenceModel model = new MaterialCorrespondenceModel();
-                model.setMerchandiseID(info.getMerchandiseID().trim());
-                List<MaterialCorrespondenceModel.CorrespondingMaterial> materialList = new Gson().fromJson(info.getMaterialListJson(), new TypeToken<List<MaterialCorrespondenceModel.CorrespondingMaterial>>() {}.getType());
-                for (MaterialCorrespondenceModel.CorrespondingMaterial correspondingMaterial: materialList) {
-                    correspondingMaterial.setMaterialID(correspondingMaterial.getMaterialID().trim());
-                }
-                model.setMaterial(materialList);
-                materialCorrespondenceModelList.add(model);
-            }
-
-            for (InvoiceViewModel.InvoiceLine line: lineList){
-                for (MaterialCorrespondenceModel materialCorrespondenceModel : materialCorrespondenceModelList) {
-                    if (line.getMerchandiseID().equals(materialCorrespondenceModel.getMerchandiseID())) {
-
-                        for (DeliverInvoiceModel model : mDeliverInvoiceModelList){
-                            for (MaterialCorrespondenceModel.CorrespondingMaterial correspondingMaterialModel: materialCorrespondenceModel.getMaterial()) {
-                                if (model.getMaterialId().equals(correspondingMaterialModel.getMaterialID())) {
-                                    model.setSendOutNum(model.getSendOutNum() + (line.getQuantity() * correspondingMaterialModel.getQuantity()));
-                                    model.setRecycleNum(model.getRecycleNum() + (line.getQuantity() * correspondingMaterialModel.getQuantity()));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            mDeliverGoodsAdapter.notifyDataSetChanged();
-        } catch (DbException e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * 有brcode
      * @param code
@@ -678,6 +689,9 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             }
 
             if (customerInfo != null) {
+                //清空物料信息
+                getData();
+
                 mSubmitInvoiceInfo.setCustomerID(customerInfo.getCustomerID());
                 mSubmitInvoiceInfo.setCustomerName(customerInfo.getCustomerName());
                 delivergoods_customer_no.setText(customerInfo.getCustomerID());

@@ -103,32 +103,40 @@ public class LoginActivity extends BaseActivity {
         String pwd = pwdEt.getText().toString();
         List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         if (crop != null && userName != null && pwd != null) {
-            if (!crop.equals("") && !userName.equals("") && !pwd.equals("")) {
-                if (userModelList != null) {
-                    if (userModelList.size() > 0) {
-                        // 判斷是否和已登錄賬戶公司相同
-                        boolean b = true;
-                        for (int i = 0; i < userModelList.size(); i++) {
-                            if (userModelList.get(i).getCorp().equals(crop)) {
-                                b = false;
+            if(!crop.contains("\n") && !userName.contains("\n") && !pwd.contains("\n") && !crop.contains(" ") && !userName.contains(" ") && !pwd.contains(" ")) {
+                if (!crop.equals("") && !userName.equals("") && !pwd.equals("")) {
+                    if (userModelList != null) {
+                        if (userModelList.size() > 0) {
+                            // 判斷是否和已登錄賬戶公司相同
+                            boolean b = true;
+                            for (int i = 0; i < userModelList.size(); i++) {
+                                if (userModelList.get(i).getCorp().equals(crop)) {
+                                    b = false;
+                                }
                             }
-                        }
 
-                        if (b) {
-                            doLogin(crop, userName, pwd);
+                            if (b) {
+                                doLogin(crop, userName, pwd);
+                            } else {
+                                progressLL.setVisibility(View.GONE);
+                                Toast.makeText(this, "同一公司的賬號不能重複登錄系統！", Toast.LENGTH_SHORT).show();
+                            }
                         } else {
-                            progressLL.setVisibility(View.GONE);
-                            Toast.makeText(this, "同一公司的賬號不能重複登錄系統！", Toast.LENGTH_SHORT).show();
+                            doLogin(crop, userName, pwd);
                         }
                     } else {
                         doLogin(crop, userName, pwd);
                     }
                 } else {
-                    doLogin(crop, userName, pwd);
+                    progressLL.setVisibility(View.GONE);
+                    Toast.makeText(this, "請填寫全登錄信息！", Toast.LENGTH_SHORT).show();
                 }
             } else {
                 progressLL.setVisibility(View.GONE);
-                Toast.makeText(this, "請填寫全登錄信息！", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "請勿輸入特殊符號，如換行或空格！", Toast.LENGTH_LONG).show();
+                cropEt.setText("");
+                userNameEt.setText("");
+                pwdEt.setText("");
             }
         } else {
             progressLL.setVisibility(View.GONE);

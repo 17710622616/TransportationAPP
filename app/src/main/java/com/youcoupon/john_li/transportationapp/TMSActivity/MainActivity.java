@@ -223,6 +223,7 @@ public class MainActivity extends BaseActivity {
             } else {
                 // 當不是當天的登錄資料，清除資料並重新登錄
                 try {
+                    TMSApplication.db.delete(TrainsInfo.class);
                     TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
                     TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
                     TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
@@ -236,6 +237,8 @@ public class MainActivity extends BaseActivity {
         } else {
             // 當不是當天的登錄資料，清除資料並重新登錄
             try {
+
+                TMSApplication.db.delete(TrainsInfo.class);
                 TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
                 TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
                 TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
@@ -271,21 +274,24 @@ public class MainActivity extends BaseActivity {
                         closeAccount();
                         break;
                     case 3:
-                        startActivityForResult(new Intent(MainActivity.this, InvoiceStateActivity.class), 3);
+
                         break;
                     case 4:
-                        changeCorp();
+                        startActivityForResult(new Intent(MainActivity.this, InvoiceStateActivity.class), 3);
                         break;
                     case 5:
-                        showUpdateDialog();
+                        changeCorp();
                         break;
                     case 6:
-                        circleKClockIn();
+                        showUpdateDialog();
                         break;
                     case 7:
-                        reUploadPhoto();
+                        circleKClockIn();
                         break;
                     case 8:
+                        reUploadPhoto();
+                        break;
+                    case 9:
                         loginOut();
                         break;
                     default:
@@ -312,6 +318,7 @@ public class MainActivity extends BaseActivity {
         menuList.add("物料回收");
         menuList.add("業務審核");
         menuList.add("物料結算");
+        menuList.add("發票分車");
         menuList.add("客戶簽收");
         menuList.add("切換公司");
         menuList.add("數據更新");
@@ -490,6 +497,7 @@ public class MainActivity extends BaseActivity {
                         //用集合向child_info表中插入多条数据
                         //db.save()方法不仅可以插入单个对象，还能插入集合
                         TMSApplication.db.save(list);
+                        // 记录更新状态
                         String loginMsg = String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", ""));
                         List<UserModel> mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
                         for (int i = 0; i < mUserModelList.size(); i++) {
@@ -810,9 +818,11 @@ public class MainActivity extends BaseActivity {
                             } else {
                                 // 當是今天，但上次更新有失敗的情況則再次更新
                                 try {
+                                    TMSApplication.db.delete(TrainsInfo.class);
                                     TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
                                     TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
                                     TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
+                                    TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
                                 } catch (DbException e) {
                                     e.printStackTrace();
                                 }
@@ -853,6 +863,7 @@ public class MainActivity extends BaseActivity {
                             } else {
                                 // 當是今天，但上次更新有失敗的情況則再次更新
                                 try {
+                                    TMSApplication.db.delete(TrainsInfo.class);
                                     TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
                                     TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
                                     TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
@@ -1121,11 +1132,6 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
-                        try {
-                            TMSApplication.db.delete(TrainsInfo.class);
-                        } catch (DbException e) {
-
-                        }
                         callNetLoginOut();
                     }
                 })

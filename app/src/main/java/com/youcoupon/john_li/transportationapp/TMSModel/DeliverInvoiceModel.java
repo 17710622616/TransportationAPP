@@ -9,6 +9,15 @@ public class DeliverInvoiceModel {
     private String materialName;
     private int sendOutNum;
     private int recycleNum;
+    private int seq;
+
+    public Integer getSeq() {
+        return seq;
+    }
+
+    public void setSeq(Integer seq) {
+        this.seq = seq;
+    }
 
     public String getMaterialId() {
         return materialId;

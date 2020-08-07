@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -57,6 +58,8 @@ import org.xutils.x;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -160,12 +163,60 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     deliverInvoiceModel.setRecycleNum(0);
                     mDeliverInvoiceModelList.add(deliverInvoiceModel);
                 }
+
+                orderMaterialList();
             } else {
                 Toast.makeText(this, "暫無物料信息，請檢查並更新！", Toast.LENGTH_SHORT).show();
             }
         } catch (DbException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 默认排序
+     */
+    private void orderMaterialList() {
+        for (DeliverInvoiceModel model: mDeliverInvoiceModelList) {
+            switch (model.getMaterialId()) {
+                case "014":
+                    model.setSeq(1);
+                    break;
+                case "013C":
+                    model.setSeq(2);
+                    break;
+                case "015":
+                    model.setSeq(3);
+                    break;
+                case "013G":
+                    model.setSeq(4);
+                    break;
+                case "013F":
+                    model.setSeq(5);
+                    break;
+                case "013A":
+                    model.setSeq(6);
+                    break;
+                case "013B":
+                    model.setSeq(7);
+                    break;
+                case "013E":
+                    model.setSeq(8);
+                    break;
+                case "013D":
+                    model.setSeq(9);
+                    break;
+                default:
+                    model.setSeq(100);
+                    break;
+            }
+        }
+
+        Collections.sort(mDeliverInvoiceModelList,new Comparator<DeliverInvoiceModel>(){
+            public int compare(DeliverInvoiceModel arg0, DeliverInvoiceModel arg1) {
+                return arg0.getSeq().compareTo(arg1.getSeq());
+            }
+        });
     }
 
     @RequiresApi(api = 26)
@@ -177,6 +228,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 break;
             case R.id.head_right_tv:
                 dialog = new ProgressDialog(this);
+
+
                 dialog.setTitle("提示");
                 dialog.setMessage("正在提交發票......");
                 dialog.setCancelable(false);
@@ -621,6 +674,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                             TextView cancel = view1.findViewById(R.id.dialog_dg_cancel_tv);
                             final RadioButton rb1 = view1.findViewById(R.id.dialog_dg_send_out_rb);
                             final RadioButton rb2 = view1.findViewById(R.id.dialog_dg_recycle_rb);
+                            final RadioButton rb3 = view1.findViewById(R.id.dialog_dg_send_recycle_rb);
 
                             final Dialog d = dialog1.create();
                             name.setText(mDeliverInvoiceModelList.get(position).getMaterialName());
@@ -629,12 +683,64 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                                 public void onClick(View v) {
                                     try {
                                         if (!numEt.getText().equals("")) {
-                                            if ((rb1.isChecked() || rb2.isChecked() ) && !(rb1.isChecked() && rb2.isChecked())) {
+                                            if ((rb1.isChecked() || rb2.isChecked() || rb3.isChecked()) && !(rb1.isChecked() && rb2.isChecked() && rb3.isChecked())) {
+                                                Log.d("MaterialId=", mDeliverInvoiceModelList.get(position).getMaterialId() + "---");
                                                 if (rb1.isChecked()) {
                                                     mDeliverInvoiceModelList.get(position).setSendOutNum(Integer.parseInt(numEt.getText().toString()));
+
+                                                    // defaulet玻璃樽013G和盘013F的数量
+                                                    if (mDeliverInvoiceModelList.get(position).getMaterialId().equals("013F")) {
+                                                        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
+                                                            if (deliverInvoiceModel.getMaterialId().equals("013G")) {
+                                                                deliverInvoiceModel.setSendOutNum(Integer.parseInt(numEt.getText().toString()) * 24);
+                                                            }
+                                                        }
+                                                    } else if (mDeliverInvoiceModelList.get(position).getMaterialId().equals("013G")) {
+                                                        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
+                                                            if (deliverInvoiceModel.getMaterialId().equals("013F")) {
+                                                                deliverInvoiceModel.setSendOutNum((int) Math.ceil(Double.parseDouble(numEt.getText().toString()) / 24));
+                                                            }
+                                                        }
+                                                    }
                                                 } else if (rb2.isChecked()) {
                                                     mDeliverInvoiceModelList.get(position).setRecycleNum(Integer.parseInt(numEt.getText().toString()));
+
+                                                    // defaulet玻璃樽013F和盘013G的数量
+                                                    if (mDeliverInvoiceModelList.get(position).getMaterialId().equals("013F")) {
+                                                        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
+                                                            if (deliverInvoiceModel.getMaterialId().equals("013G")) {
+                                                                deliverInvoiceModel.setRecycleNum(Integer.parseInt(numEt.getText().toString()) * 24);
+                                                            }
+                                                        }
+                                                    } else if (mDeliverInvoiceModelList.get(position).getMaterialId().equals("013G")) {
+                                                        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
+                                                            if (deliverInvoiceModel.getMaterialId().equals("013F")) {
+                                                                deliverInvoiceModel.setRecycleNum((int) Math.ceil(Double.parseDouble(numEt.getText().toString()) / 24));
+                                                            }
+                                                        }
+                                                    }
+                                                } else if (rb3.isChecked()) {
+                                                    mDeliverInvoiceModelList.get(position).setSendOutNum(Integer.parseInt(numEt.getText().toString()));
+                                                    mDeliverInvoiceModelList.get(position).setRecycleNum(Integer.parseInt(numEt.getText().toString()));
+
+                                                    // defaulet玻璃樽013F和盘013G的数量
+                                                    if (mDeliverInvoiceModelList.get(position).getMaterialId().equals("013F")) {
+                                                        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
+                                                            if (deliverInvoiceModel.getMaterialId().equals("013G")) {
+                                                                 deliverInvoiceModel.setSendOutNum(Integer.parseInt(numEt.getText().toString()) * 24);
+                                                                deliverInvoiceModel.setRecycleNum(Integer.parseInt(numEt.getText().toString()) * 24);
+                                                            }
+                                                        }
+                                                    } else if (mDeliverInvoiceModelList.get(position).getMaterialId().equals("013G")) {
+                                                        for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
+                                                            if (deliverInvoiceModel.getMaterialId().equals("013F")) {
+                                                                deliverInvoiceModel.setSendOutNum((int) Math.ceil(Double.parseDouble(numEt.getText().toString()) / 24));
+                                                                deliverInvoiceModel.setRecycleNum((int) Math.ceil(Double.parseDouble(numEt.getText().toString()) / 24));
+                                                            }
+                                                        }
+                                                    }
                                                 }
+
                                                 mDeliverGoodsAdapter.notifyDataSetChanged();
                                                 d.dismiss();
                                             } else {

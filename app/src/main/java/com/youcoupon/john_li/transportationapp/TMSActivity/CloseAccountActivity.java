@@ -72,6 +72,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
     private TextView textView;
     printer mPrinter = new printer();
     String url;
+    private boolean hasPrint = false;
 
     private List<DeliverInvoiceModel> mDeliverInvoiceModelList;
     @Override
@@ -202,30 +203,29 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                 break;
             case R.id.close_account_print:
                 try {
-                    // 查询所有物料
-                    List<MaterialNumberInfo> materialNumberList = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
-                    List<String> materialList = getHasResponseMatrialList();
+                    if (!hasPrint) {
+                        hasPrint = true;
+                        // 查询所有物料
+                        List<MaterialNumberInfo> materialNumberList = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
 
-                    // 按金
-                    PostStockMovementModel movementDepositModel = new PostStockMovementModel();
-                    PostStockMovementModel.Header depositheader = new PostStockMovementModel.Header();
-                    String deposittime = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
-                    deposittime = deposittime.replace(":","");
-                    deposittime = deposittime.replace(" ","");
-                    TrainsInfo depositfirst = TMSApplication.db.findFirst(TrainsInfo.class);
-                    depositheader.setReference(TMSShareInfo.IMEI + deposittime);
-                    depositheader.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
-                    if (depositfirst != null) {
-                        depositheader.setTruckNo(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
-                    } else {
-                        depositheader.setTruckNo(1);
-                    }
-                    movementDepositModel.setHeader(depositheader);
+                        // 按金
+                        PostStockMovementModel movementDepositModel = new PostStockMovementModel();
+                        PostStockMovementModel.Header depositheader = new PostStockMovementModel.Header();
+                        String deposittime = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                        deposittime = deposittime.replace(":","");
+                        deposittime = deposittime.replace(" ","");
+                        TrainsInfo depositfirst = TMSApplication.db.findFirst(TrainsInfo.class);
+                        depositheader.setReference(TMSShareInfo.IMEI + deposittime + "D");
+                        depositheader.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+                        if (depositfirst != null) {
+                            depositheader.setTruckNo(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
+                        } else {
+                            depositheader.setTruckNo(1);
+                        }
+                        movementDepositModel.setHeader(depositheader);
 
-                    List<PostStockMovementModel.Line> lineList = new ArrayList<>();
-                    for (MaterialNumberInfo info : materialNumberList) {
-                        // 检查是否存在物料关系，存在则不提交
-                        if (!materialList.contains(info.getMaterialID())) {
+                        List<PostStockMovementModel.Line> lineList = new ArrayList<>();
+                        for (MaterialNumberInfo info : materialNumberList) {
                             PostStockMovementModel.Line depositLine = new PostStockMovementModel.Line();
                             if (info.getMaterialDepositeNum() != 0) {
                                 depositLine.setQuantity(info.getMaterialDepositeNum());
@@ -235,119 +235,152 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                             depositLine.setMerchandiseID(info.getMaterialID());
                             lineList.add(depositLine);
                         }
-                    }
-                    movementDepositModel.setLines(lineList);
+                        movementDepositModel.setLines(lineList);
 
-                    // 回收
-                    PostStockMovementModel movementRefundModel = new PostStockMovementModel();
-                    PostStockMovementModel.Header refundheader = new PostStockMovementModel.Header();
-                    String refundtime = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
-                    refundtime = refundtime.replace(":","");
-                    refundtime = refundtime.replace(" ","");
-                    TrainsInfo refundfirst = TMSApplication.db.findFirst(TrainsInfo.class);
-                    refundheader.setReference(TMSShareInfo.IMEI + refundtime);
-                    refundheader.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
-                    if (refundfirst != null) {
-                        refundheader.setTruckNo(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
-                    } else {
-                        refundheader.setTruckNo(1);
-                    }
-                    movementRefundModel.setHeader(refundheader);
-
-                    List<PostStockMovementModel.Line> refundlineList = new ArrayList<>();
-                    for (MaterialNumberInfo info : materialNumberList) {
-                        PostStockMovementModel.Line refundLine = new PostStockMovementModel.Line();
-                        if (info.getMaterialRefundNum() != 0) {
-                            refundLine.setQuantity(info.getMaterialRefundNum());
+                        // 回收
+                        PostStockMovementModel movementRefundModel = new PostStockMovementModel();
+                        PostStockMovementModel.Header refundheader = new PostStockMovementModel.Header();
+                        String refundtime = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                        refundtime = refundtime.replace(":","");
+                        refundtime = refundtime.replace(" ","");
+                        TrainsInfo refundfirst = TMSApplication.db.findFirst(TrainsInfo.class);
+                        refundheader.setReference(TMSShareInfo.IMEI + refundtime + "R");
+                        refundheader.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+                        if (refundfirst != null) {
+                            refundheader.setTruckNo(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
                         } else {
-                            refundLine.setQuantity(0);
+                            refundheader.setTruckNo(1);
                         }
-                        refundLine.setMerchandiseID(info.getMaterialID());
-                        refundlineList.add(refundLine);
-                    }
-                    movementRefundModel.setLines(refundlineList);
+                        movementRefundModel.setHeader(refundheader);
 
-                    //新增本車次車次表
-                    TrainsInfo trainsInfo = new TrainsInfo();
-                    TrainsInfo first1 = TMSApplication.db.findFirst(TrainsInfo.class);
-                    if (first1 != null) {
-                        trainsInfo.setTrainsTimes(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
-                    } else {
-                        trainsInfo.setTrainsTimes(1);
-                    }
-                    trainsInfo.setTodayDepositBody(new Gson().toJson(movementDepositModel));
-                    trainsInfo.setTodayRefundBody(new Gson().toJson(movementRefundModel));
-                    trainsInfo.setTodayDate(TMSCommonUtils.getTimeNow());
-                    boolean a = true;
-                    for (PostStockMovementModel.Line line : movementDepositModel.getLines()) {
-                        if (line.getQuantity() != 0) {
-                            a = false;
+                        List<PostStockMovementModel.Line> refundlineList = new ArrayList<>();
+                        for (MaterialNumberInfo info : materialNumberList) {
+                            PostStockMovementModel.Line refundLine = new PostStockMovementModel.Line();
+                            if (info.getMaterialRefundNum() != 0) {
+                                refundLine.setQuantity(info.getMaterialRefundNum());
+                            } else {
+                                refundLine.setQuantity(0);
+                            }
+                            refundLine.setMerchandiseID(info.getMaterialID());
+                            refundlineList.add(refundLine);
                         }
-                    }
+                        movementRefundModel.setLines(refundlineList);
 
-                    if (a) {
-                        trainsInfo.setTodayDepositStatus(0);
-                    } else {
-                        trainsInfo.setTodayDepositStatus(1);
-                    }
-
-                    boolean b = true;
-                    for (PostStockMovementModel.Line line : movementRefundModel.getLines()) {
-                        if (line.getQuantity() != 0) {
-                            b = false;
+                        //新增本車次車次表
+                        TrainsInfo trainsInfo = new TrainsInfo();
+                        TrainsInfo first1 = TMSApplication.db.findFirst(TrainsInfo.class);
+                        if (first1 != null) {
+                            trainsInfo.setTrainsTimes(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1);
+                        } else {
+                            trainsInfo.setTrainsTimes(1);
                         }
-                    }
-                    if (b) {
-                        trainsInfo.setTodayRefundStatus(01);
-                    } else {
-                        trainsInfo.setTodayRefundStatus(1);
-                    }
-
-                    TMSApplication.db.saveOrUpdate(trainsInfo);
-
-                    // 將結算單提交至服務器
-                    callNetSubmitThatTrainsData();
-
-                    // 打印結算單
-                    CloseAccountActivity.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Picture pic = webview.capturePicture();
-                                int nw = pic.getWidth();
-                                int nh = pic.getHeight();
-                                Bitmap bitmap = Bitmap.createBitmap(nw, nh, Bitmap.Config.ARGB_4444);
-                                Canvas can = new Canvas(bitmap);
-                                pic.draw(can);
-                                stroageBitmap(bitmap);
-
-                                int newWidth = nw;
-                                int newHeight = nh;
-                                if (nw > 400) {
-                                    float rate = 400 * 1.0f / nw * 1.0f;
-                                    newWidth = 400;
-                                    newHeight = (int) (nh * rate);
-                                }
-                                bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
-                                //                        Utils.stroageBitmap(bitmap);
-                                Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
-                                stroageBitmap(newBitmap);
-                                mPrinter.PrintBitmap(newBitmap);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            } catch (Error error) {
-                                error.printStackTrace();
+                        trainsInfo.setTodayDepositBody(new Gson().toJson(movementDepositModel));
+                        trainsInfo.setTodayRefundBody(new Gson().toJson(movementRefundModel));
+                        trainsInfo.setTodayDate(TMSCommonUtils.getTimeNow());
+                        boolean a = true;
+                        for (PostStockMovementModel.Line line : movementDepositModel.getLines()) {
+                            if (line.getQuantity() != 0) {
+                                a = false;
                             }
                         }
-                    });
+
+                        if (!a) {
+                            trainsInfo.setTodayDepositStatus(0);
+                        } else {
+                            trainsInfo.setTodayDepositStatus(1);
+                        }
+
+                        boolean b = true;
+                        for (PostStockMovementModel.Line line : movementRefundModel.getLines()) {
+                            if (line.getQuantity() != 0) {
+                                b = false;
+                            }
+                        }
+                        if (!b) {
+                            trainsInfo.setTodayRefundStatus(0);
+                        } else {
+                            trainsInfo.setTodayRefundStatus(1);
+                        }
+
+                        TMSApplication.db.saveOrUpdate(trainsInfo);
+
+                        // 將結算單提交至服務器
+                        callNetSubmitThatTrainsData();
+
+                        // 打印結算單
+                        CloseAccountActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Picture pic = webview.capturePicture();
+                                    int nw = pic.getWidth();
+                                    int nh = pic.getHeight();
+                                    Bitmap bitmap = Bitmap.createBitmap(nw, nh, Bitmap.Config.ARGB_4444);
+                                    Canvas can = new Canvas(bitmap);
+                                    pic.draw(can);
+                                    stroageBitmap(bitmap);
+
+                                    int newWidth = nw;
+                                    int newHeight = nh;
+                                    if (nw > 400) {
+                                        float rate = 400 * 1.0f / nw * 1.0f;
+                                        newWidth = 400;
+                                        newHeight = (int) (nh * rate);
+                                    }
+                                    bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+                                    //                        Utils.stroageBitmap(bitmap);
+                                    Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
+                                    stroageBitmap(newBitmap);
+                                    mPrinter.PrintBitmap(newBitmap);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                } catch (Error error) {
+                                    error.printStackTrace();
+                                }
+                            }
+                        });
 
 
-                    // 清空物料回收數量表
-                    List<MaterialNumberInfo> list = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
-                    for (MaterialNumberInfo info : list) {
-                        info.setMaterialDepositeNum(0);
-                        info.setMaterialRefundNum(0);
-                        TMSApplication.db.saveOrUpdate(info);
+                        // 清空物料回收數量表
+                        List<MaterialNumberInfo> list = TMSApplication.db.selector(MaterialNumberInfo.class).findAll();
+                        for (MaterialNumberInfo info : list) {
+                            info.setMaterialDepositeNum(0);
+                            info.setMaterialRefundNum(0);
+                            TMSApplication.db.saveOrUpdate(info);
+                        }
+                    } else {
+                        // 打印結算單
+                        CloseAccountActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Picture pic = webview.capturePicture();
+                                    int nw = pic.getWidth();
+                                    int nh = pic.getHeight();
+                                    Bitmap bitmap = Bitmap.createBitmap(nw, nh, Bitmap.Config.ARGB_4444);
+                                    Canvas can = new Canvas(bitmap);
+                                    pic.draw(can);
+                                    stroageBitmap(bitmap);
+
+                                    int newWidth = nw;
+                                    int newHeight = nh;
+                                    if (nw > 400) {
+                                        float rate = 400 * 1.0f / nw * 1.0f;
+                                        newWidth = 400;
+                                        newHeight = (int) (nh * rate);
+                                    }
+                                    bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+                                    //                        Utils.stroageBitmap(bitmap);
+                                    Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, 399, newHeight);
+                                    stroageBitmap(newBitmap);
+                                    mPrinter.PrintBitmap(newBitmap);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                } catch (Error error) {
+                                    error.printStackTrace();
+                                }
+                            }
+                        });
                     }
                 } catch (DbException e) {
                     e.printStackTrace();
@@ -365,17 +398,26 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
     private void callNetSubmitThatTrainsData() {
         try {
             List<TrainsInfo> all = TMSApplication.db.selector(TrainsInfo.class).findAll();
+            Log.d("物料結算列表", new Gson().toJson(all));
             for(TrainsInfo trainsInfo : all) {
                 if (trainsInfo.getTodayDepositStatus() != 1) {
                     PostStockMovementModel depositModel = new Gson().fromJson(trainsInfo.getTodayDepositBody(), PostStockMovementModel.class);
-                    if (depositModel.getLines().get(0).getQuantity() != 0) {
+                    int qty = 0;
+                    for (PostStockMovementModel.Line lines : depositModel.getLines()) {
+                        qty += lines.getQuantity();
+                    }
+                    if (qty != 0) {
                         callNetSubmitMaterialsAndSettlement(depositModel, true);
                     }
                 }
 
-                if (trainsInfo.getTodayRefundStatus() != 1) {
+                 if (trainsInfo.getTodayRefundStatus() != 1) {
                     PostStockMovementModel refundModel = new Gson().fromJson(trainsInfo.getTodayRefundBody(), PostStockMovementModel.class);
-                    if (refundModel.getLines().get(0).getQuantity() != 0) {
+                    int qty = 0;
+                    for (PostStockMovementModel.Line lines : refundModel.getLines()) {
+                        qty += lines.getQuantity();
+                    }
+                    if (qty != 0) {
                         callNetSubmitMaterialsAndSettlement(refundModel, false);
                     }
                 }

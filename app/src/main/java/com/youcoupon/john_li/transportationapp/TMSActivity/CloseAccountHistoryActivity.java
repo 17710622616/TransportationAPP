@@ -97,14 +97,22 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                     for (TrainsInfo trainsInfo : all) {
                         if (trainsInfo.getTodayDepositStatus() != 1) {
                             PostStockMovementModel depositModel = new Gson().fromJson(trainsInfo.getTodayDepositBody(), PostStockMovementModel.class);
-                            if (depositModel.getLines().get(0).getQuantity() != 0) {
+                            int qty = 0;
+                            for (PostStockMovementModel.Line lines : depositModel.getLines()) {
+                                qty += lines.getQuantity();
+                            }
+                            if (qty != 0) {
                                 callNetSubmitMaterialsAndSettlement(depositModel, true);
                             }
                         }
 
                         if (trainsInfo.getTodayRefundStatus() != 1) {
                             PostStockMovementModel refundModel = new Gson().fromJson(trainsInfo.getTodayRefundBody(), PostStockMovementModel.class);
-                            if (refundModel.getLines().get(0).getQuantity() != 0) {
+                            int qty = 0;
+                            for (PostStockMovementModel.Line lines : refundModel.getLines()) {
+                                qty += lines.getQuantity();
+                            }
+                            if (qty != 0) {
                                 callNetSubmitMaterialsAndSettlement(refundModel, false);
                             }
                         }
@@ -115,8 +123,6 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                 break;
         }
     }
-
-
         /**
          * 提交物料结算状态
          */
@@ -146,6 +152,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                             name = new KeyValue("today_refund_status", 1);
                         }
                         TMSApplication.db.update(TrainsInfo.class,b,name);
+                        Toast.makeText(CloseAccountHistoryActivity.this, commonModel.getMessage() + ",提交結算成功！", Toast.LENGTH_SHORT).show();
                     } catch (DbException e) {
                         e.printStackTrace();
                     }
@@ -182,9 +189,9 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                     e.printStackTrace();
                 }
                 if (ex instanceof java.net.SocketTimeoutException) {
-                    Toast.makeText(CloseAccountHistoryActivity.this, "提交結算網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CloseAccountHistoryActivity.this, "提交結算網絡連接超時，請重試" + ex.getMessage(), Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(CloseAccountHistoryActivity.this, "提交結算失敗！", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CloseAccountHistoryActivity.this, "提交結算失敗！" + ex.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
 

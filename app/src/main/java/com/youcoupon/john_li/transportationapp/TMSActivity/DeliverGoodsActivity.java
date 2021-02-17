@@ -418,7 +418,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 }
             }
 
-            header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+            header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getDriverID());
             postInvoiceModel.setHeader(header);
             // 发票表体
             List<PostInvoiceModel.Line> lineList = new ArrayList<>();

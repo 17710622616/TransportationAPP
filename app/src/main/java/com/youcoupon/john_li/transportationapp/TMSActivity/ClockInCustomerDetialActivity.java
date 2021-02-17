@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,7 +22,7 @@ import com.google.gson.Gson;
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.ClockInPhotoInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.ClockInOrderStatusModel;
-import com.youcoupon.john_li.transportationapp.TMSUtils.PostPhotoService;
+import com.youcoupon.john_li.transportationapp.TMSService.PostPhotoService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 

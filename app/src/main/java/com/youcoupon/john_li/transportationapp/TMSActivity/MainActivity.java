@@ -8,9 +8,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.telephony.TelephonyManager;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -37,22 +39,30 @@ import com.youcoupon.john_li.transportationapp.TMSDBInfo.MaterialNumberInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
+import com.youcoupon.john_li.transportationapp.TMSModel.InvoiceThisVhiclePullModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.InvoiceViewModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.MaterialCorrespondenceModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
-import com.youcoupon.john_li.transportationapp.TMSUtils.PostPhotoService;
+import com.youcoupon.john_li.transportationapp.TMSService.PostPositionService;
+import com.youcoupon.john_li.transportationapp.TMSUtils.GpsUtils;
+import com.youcoupon.john_li.transportationapp.TMSService.PostPhotoService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSConfigor;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
+import com.youcoupon.john_li.transportationapp.TMSService.TimingPositionService;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
 import org.xutils.common.Callback;
+import org.xutils.common.util.KeyValue;
+import org.xutils.db.sqlite.WhereBuilder;
 import org.xutils.ex.DbException;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +81,7 @@ public class MainActivity extends BaseActivity {
 
     private List<String> menuList;
     private List<UserModel> mUserModelList;
-    private ProgressDialog dialog;
+    private ProgressDialog mLoadDialog;
     private Map<String, Boolean> updateStatus;
     private Handler mHandle = new Handler() {
         @Override
@@ -87,17 +97,17 @@ public class MainActivity extends BaseActivity {
                     }
 
                     if (!b) {
-                        if (dialog != null) {
-                            if (dialog.isShowing()) {
-                                dialog.dismiss();
+                        if (mLoadDialog != null) {
+                            if (mLoadDialog.isShowing()) {
+                                mLoadDialog.dismiss();
                             }
                         }
                     }
                     break;
                 case 2:
-                    if (dialog != null) {
-                        if (dialog.isShowing()) {
-                            dialog.dismiss();
+                    if (mLoadDialog != null) {
+                        if (mLoadDialog.isShowing()) {
+                            mLoadDialog.dismiss();
                         }
                     }
                     break;
@@ -119,13 +129,35 @@ public class MainActivity extends BaseActivity {
         } else {
             TMSShareInfo.IMEI = Build.SERIAL;
         }
+
+        // 判断定位打开权限
+        if (!GpsUtils.isOPen(this)) {
+            GpsUtils.openGPS(this);
+        }
+
+        // 打开地图定位服务
+        if (!TMSCommonUtils.isServiceRunning(this, "com.youcoupon.john_li.transportationapp.TMSService.TimingPositionService")) {
+            Intent intent = new Intent(this, TimingPositionService.class);
+            startService(intent);
+        }
+
+        // 打开定时提交定位信息服务
+        if (!TMSCommonUtils.isServiceRunning(this, "com.youcoupon.john_li.transportationapp.TMSService.PostPositionService")) {
+            Intent intent = new Intent(this, PostPositionService.class);
+            startService(intent);
+        }
+
+        // 清楚一个星期前的数据
+        TMSCommonUtils.deleteSevenDaysAgoPosition();
+
+        // 检查登录状态及更新状态
         updateStatus = new HashMap<>();
         updateStatus.put("40CsutomerStatus", false);
-        updateStatus.put("40InovieStatus", false);
+        updateStatus.put("40InovieStatus", true);
         updateStatus.put("40MaterialStatus", false);
         updateStatus.put("40MaterialCorrespondenceStatus", false);
-        updateStatus.put("72CustomerStatus", false);
-        updateStatus.put("72OrderStatus", false);
+        updateStatus.put("72CustomerStatus", true);
+        updateStatus.put("72OrderStatus", true);
         String loginMsg = String.valueOf(SpuUtils.get(this, "loginMsg", ""));
         if (!loginMsg.equals("") && !loginMsg.equals("null")) {    // 判斷是否有登錄記錄
             mUserModelList = new Gson().fromJson(loginMsg, new TypeToken<List<UserModel>>() {}.getType());
@@ -154,11 +186,11 @@ public class MainActivity extends BaseActivity {
                         } else {
                             // 當是今天，但上次更新有失敗的情況則再次更新,但不刪除業務資料
                             // 判断需要更新资料的公司，分别由40、72、XX
-                            dialog = new ProgressDialog(MainActivity.this);
-                            dialog.setTitle("提示");
-                            dialog.setMessage("正在更新資料......");
-                            dialog.setCancelable(false);
-                            dialog.show();
+                            mLoadDialog = new ProgressDialog(MainActivity.this);
+                            mLoadDialog.setTitle("提示");
+                            mLoadDialog.setMessage("正在更新資料......");
+                            mLoadDialog.setCancelable(false);
+                            mLoadDialog.show();
                             update40CustomerData();
                             updateMaterialData();
                             updateMaterialCorrespondenceData();
@@ -182,11 +214,11 @@ public class MainActivity extends BaseActivity {
                             }
 
                             // 判断需要更新资料的公司，分别由40、72、XX
-                            dialog = new ProgressDialog(MainActivity.this);
-                            dialog.setTitle("提示");
-                            dialog.setMessage("正在更新資料......");
-                            dialog.setCancelable(false);
-                            dialog.show();
+                            mLoadDialog = new ProgressDialog(MainActivity.this);
+                            mLoadDialog.setTitle("提示");
+                            mLoadDialog.setMessage("正在更新資料......");
+                            mLoadDialog.setCancelable(false);
+                            mLoadDialog.show();
                             forcedUpdate72Data();
                             update72CustomerData();
                         }
@@ -198,11 +230,11 @@ public class MainActivity extends BaseActivity {
                         } else {
                             // 當是今天，但上次更新有失敗的情況則再次更新
                             // 判断需要更新资料的公司，分别由40、72、XX
-                            dialog = new ProgressDialog(MainActivity.this);
-                            dialog.setTitle("提示");
-                            dialog.setMessage("正在更新資料......");
-                            dialog.setCancelable(false);
-                            dialog.show();
+                            mLoadDialog = new ProgressDialog(MainActivity.this);
+                            mLoadDialog.setTitle("提示");
+                            mLoadDialog.setMessage("正在更新資料......");
+                            mLoadDialog.setCancelable(false);
+                            mLoadDialog.show();
                             update40CustomerData();
                             updateMaterialData();
                             updateMaterialCorrespondenceData();
@@ -222,30 +254,13 @@ public class MainActivity extends BaseActivity {
                 }
             } else {
                 // 當不是當天的登錄資料，清除資料並重新登錄
-                try {
-                    TMSApplication.db.delete(TrainsInfo.class);
-                    TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
-                    TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
-                    TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
-                    TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-                } catch (DbException e) {
-                    e.printStackTrace();
-                }
+                clearDBData();
                 SpuUtils.put(this, "loginMsg", "");
                 startActivityForResult(new Intent(MainActivity.this, LoginActivity.class), 1);
             }
         } else {
             // 當不是當天的登錄資料，清除資料並重新登錄
-            try {
-
-                TMSApplication.db.delete(TrainsInfo.class);
-                TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
-                TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
-                TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
-                TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-            } catch (DbException e) {
-                e.printStackTrace();
-            }
+            clearDBData();
             SpuUtils.put(this, "loginMsg", "");
             startActivityForResult(new Intent(MainActivity.this, LoginActivity.class), 1);
         }
@@ -271,25 +286,74 @@ public class MainActivity extends BaseActivity {
                         todayOrder();
                         break;
                     case 2:
-                        closeAccount();
+                        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                            closeAccount();
+                        } else {
+                            startActivityForResult(new Intent(MainActivity.this, InvoiceStateActivity.class), 3);
+                        }
                         break;
                     case 3:
+                        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                            //當用沒被鎖定則提示用戶操作分車將鎖定用戶
+                            new AlertDialog.Builder(MainActivity.this)
+                                    .setTitle("系統提示")
+                                    .setMessage("開始執行分車動作後您將鎖定賬戶，其他設備將無法操作該賬戶，直至您完成分車操作，是否確定!")
+                                    .setPositiveButton("確定",
+                                            new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    confrimInvoiceDivide();
+                                                    dialog.dismiss();
+                                                }
+                                            })
+                                    .setNeutralButton("取消", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    })
+                                    .create()
+                                    .show();
 
+                        } else {
+                            changeCorp();
+                        }
                         break;
                     case 4:
-                        startActivityForResult(new Intent(MainActivity.this, InvoiceStateActivity.class), 3);
+                        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                            startActivityForResult(new Intent(MainActivity.this, InvoiceStateActivity.class), 3);
+                        } else {
+                            showUpdateDialog();
+                        }
                         break;
                     case 5:
-                        changeCorp();
+                        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                            changeCorp();
+                        } else {
+                            circleKClockIn();
+                        }
                         break;
                     case 6:
-                        showUpdateDialog();
+                        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                            showUpdateDialog();
+                        } else {
+                            reUploadPhoto();
+                        }
                         break;
                     case 7:
-                        circleKClockIn();
+                        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                            circleKClockIn();
+                        } else {
+                            loginOut();
+                        }
+
                         break;
                     case 8:
-                        reUploadPhoto();
+                        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                            reUploadPhoto();
+                        } else {
+                            loginOut();
+                        }
                         break;
                     case 9:
                         loginOut();
@@ -311,14 +375,18 @@ public class MainActivity extends BaseActivity {
         textView.setText("用戶名：" + TMSShareInfo.mUserModelList.get(0).getID() + "   中文名：" + TMSShareInfo.mUserModelList.get(0).getNameChinese());
     }
 
-    /**
+    /** 
      * 初始化菜單項
      */
     private void initMenu() {
         menuList.add("物料回收");
         menuList.add("業務審核");
-        menuList.add("物料結算");
-        menuList.add("發票分車");
+        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+            menuList.add("物料結算");
+        }
+        if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+            menuList.add("發票分車");
+        }
         menuList.add("客戶簽收");
         menuList.add("切換公司");
         menuList.add("數據更新");
@@ -328,6 +396,24 @@ public class MainActivity extends BaseActivity {
     }
 
     /**
+     * 清空过往数据
+     */
+    private void clearDBData() {
+        try {
+
+            TMSApplication.db.delete(TrainsInfo.class);
+            TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
+            TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
+            TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
+            TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /*------------------------------------------------------------------------更新数据-----------------------------------------------------------------------------------*/
+    /**
+     * 更新40公司下该账户的客户资料
      * 上次有更新失敗情況，強制要求更新
      */
     private void update40CustomerData() {
@@ -384,18 +470,22 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFinished() {
-                updateStatus.put("40CsutomerStatus", false);
-                mHandle.sendEmptyMessageDelayed(2, 60 * 1000);
+                updateStatus.put("40CsutomerStatus", true);
+                mHandle.sendEmptyMessageDelayed(2, 1 * 1000);
             }
         });
     }
 
+    /**
+     * 更新该账户40公司的发票列表，for拉取物料回收时发票列表
+     */
     private void updateInovieData() {
         updateStatus.put("40InovieStatus", true);
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
         paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
         paramsMap.put("salesmanid", TMSCommonUtils.getUserFor40(this).getSalesmanID());
+        paramsMap.put("truckID", TMSCommonUtils.getUserFor40(this).getTruckID());
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_TODAY_INVOICE_LIST + TMSCommonUtils.createLinkStringByGet(paramsMap));
         params.setConnectTimeout(30 * 1000);
         String uri = params.getUri();
@@ -456,17 +546,19 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFinished() {
-                updateStatus.put("40InovieStatus", false);
-                mHandle.sendEmptyMessageDelayed(1, 5000);
+                mHandle.sendEmptyMessageDelayed(1, 1000);
             }
         });
     }
 
+    /**
+     * 获取物料回收的物料列表
+     */
     private void updateMaterialData() {
         updateStatus.put("40MaterialStatus", true);
         Map<String, String> paramsMap = new HashMap<>();
-        paramsMap.put("corp", TMSCommonUtils.getUserFor72(this).getCorp());
-        paramsMap.put("userid", TMSCommonUtils.getUserFor72(this).getID());
+        paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
+        paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_MATERIAL_LIST + TMSCommonUtils.createLinkStringByGet(paramsMap));
         params.setConnectTimeout(30 * 1000);
         String uri = params.getUri();
@@ -533,8 +625,8 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFinished() {
-                updateStatus.put("40MaterialStatus", false);
-                mHandle.sendEmptyMessageDelayed(1, 5000);
+                updateStatus.put("40MaterialStatus", true);
+                mHandle.sendEmptyMessageDelayed(1, 1000);
                 initView();
                 setListener();
                 initData();
@@ -542,11 +634,14 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    /**
+     * 获取物料回收时物料及商品的对应关系
+     */
     private void updateMaterialCorrespondenceData() {
         updateStatus.put("40MaterialCorrespondenceStatus", true);
         Map<String, String> paramsMap = new HashMap<>();
-        paramsMap.put("corp", TMSCommonUtils.getUserFor72(this).getCorp());
-        paramsMap.put("userid", TMSCommonUtils.getUserFor72(this).getID());
+        paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
+        paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_MATERIAL_CORRESPONDENCE_LIST + TMSCommonUtils.createLinkStringByGet(paramsMap));
         params.setConnectTimeout(30 * 1000);
         String uri = params.getUri();
@@ -606,8 +701,8 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFinished() {
-                updateStatus.put("40MaterialCorrespondenceStatus", false);
-                mHandle.sendEmptyMessageDelayed(1, 5000);
+                updateStatus.put("40MaterialCorrespondenceStatus", true);
+                mHandle.sendEmptyMessageDelayed(1, 1000);
                 initView();
                 setListener();
                 initData();
@@ -615,6 +710,9 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    /**
+     * 获取72公司打卡路线
+     */
     private void forcedUpdate72Data() {
         updateStatus.put("72OrderStatus", true);
         Map<String, String> paramsMap = new HashMap<>();
@@ -671,12 +769,15 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFinished() {
-                updateStatus.put("72OrderStatus", false);
-                mHandle.sendEmptyMessageDelayed(1, 5000);
+                updateStatus.put("72OrderStatus", true);
+                mHandle.sendEmptyMessageDelayed(1, 1000);
             }
         });
     }
 
+    /**
+     * 获取72公司的客户资料
+     */
     private void update72CustomerData() {
         updateStatus.put("72CustomerStatus", true);
         Map<String, String> paramsMap = new HashMap<>();
@@ -731,17 +832,16 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFinished() {
-                updateStatus.put("72CustomerStatus", false);
-                mHandle.sendEmptyMessageDelayed(1, 5000);
+                updateStatus.put("72CustomerStatus", true);
+                mHandle.sendEmptyMessageDelayed(1, 1000);
                 initView();
                 setListener();
                 initData();
             }
         });
     }
-
     /**
-     * 获取所有物料的资料
+     * 测试：获取所有物料的资料
      */
     private void getMaterilList() {
         try {
@@ -817,22 +917,14 @@ public class MainActivity extends BaseActivity {
                                 TMSApplication.setDebug(false);
                             } else {
                                 // 當是今天，但上次更新有失敗的情況則再次更新
-                                try {
-                                    TMSApplication.db.delete(TrainsInfo.class);
-                                    TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
-                                    TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
-                                    TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
-                                    TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-                                } catch (DbException e) {
-                                    e.printStackTrace();
-                                }
+                                clearDBData();
 
                                 // 判断需要更新资料的公司，分别由40、72、XX
-                                dialog = new ProgressDialog(MainActivity.this);
-                                dialog.setTitle("提示");
-                                dialog.setMessage("正在更新資料......");
-                                dialog.setCancelable(false);
-                                dialog.show();
+                                mLoadDialog = new ProgressDialog(MainActivity.this);
+                                mLoadDialog.setTitle("提示");
+                                mLoadDialog.setMessage("正在更新資料......");
+                                mLoadDialog.setCancelable(false);
+                                mLoadDialog.show();
                                 update40CustomerData();
                                 updateMaterialData();
                                 updateMaterialCorrespondenceData();
@@ -862,21 +954,13 @@ public class MainActivity extends BaseActivity {
                                 initData();
                             } else {
                                 // 當是今天，但上次更新有失敗的情況則再次更新
-                                try {
-                                    TMSApplication.db.delete(TrainsInfo.class);
-                                    TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
-                                    TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
-                                    TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
-                                    TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-                                } catch (DbException e) {
-                                    e.printStackTrace();
-                                }
+                                clearDBData();
                                 // 判断需要更新资料的公司，分别由40、72、XX
-                                dialog = new ProgressDialog(MainActivity.this);
-                                dialog.setTitle("提示");
-                                dialog.setMessage("正在更新資料......");
-                                dialog.setCancelable(false);
-                                dialog.show();
+                                mLoadDialog = new ProgressDialog(MainActivity.this);
+                                mLoadDialog.setTitle("提示");
+                                mLoadDialog.setMessage("正在更新資料......");
+                                mLoadDialog.setCancelable(false);
+                                mLoadDialog.show();
                                 update40CustomerData();
                                 updateMaterialData();
                                 updateMaterialCorrespondenceData();
@@ -918,6 +1002,7 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    /*------------------------------------------------------------------------主菜单按钮-----------------------------------------------------------------------------------*/
     private void delieverGoods() {
         List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
         boolean flag = false;
@@ -962,7 +1047,27 @@ public class MainActivity extends BaseActivity {
         if (!flag2) {
             Toast.makeText(MainActivity.this, "請先登錄澳門可口可樂飲料有限公司賬戶！", Toast.LENGTH_SHORT).show();
         } else {
-            startActivity(new Intent(MainActivity.this, CloseAccountActivity.class));
+            new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("系統提示")
+                    .setMessage("結算前會拉取車隊本車次所有數據，請確認!")
+                    .setPositiveButton("確認",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                    // 拉取车队本车次所有数据
+                                    pullInvoiceThisTime();
+                                }
+                            })
+                    .setNeutralButton("取消", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // 啟動更新界面
+                            dialog.dismiss();
+                        }
+                    })
+                    .create()
+                    .show();
         }
     }
 
@@ -1011,11 +1116,11 @@ public class MainActivity extends BaseActivity {
         } else {
             if (TMSCommonUtils.getUserForXX(MainActivity.this) != null) {
                 // 判断需要更新资料的公司，分别由40、72、XX
-                dialog = new ProgressDialog(MainActivity.this);
-                dialog.setTitle("提示");
-                dialog.setMessage("正在更新資料......");
-                dialog.setCancelable(false);
-                dialog.show();
+                mLoadDialog = new ProgressDialog(MainActivity.this);
+                mLoadDialog.setTitle("提示");
+                mLoadDialog.setMessage("正在更新資料......");
+                mLoadDialog.setCancelable(false);
+                mLoadDialog.show();
                 update40CustomerData();
                 updateMaterialData();
                 updateMaterialCorrespondenceData();
@@ -1025,20 +1130,20 @@ public class MainActivity extends BaseActivity {
                 update72CustomerData();
             } else if (TMSCommonUtils.getUserFor72(MainActivity.this) != null){
                 // 判断需要更新资料的公司，分别由40、72、XX
-                dialog = new ProgressDialog(MainActivity.this);
-                dialog.setTitle("提示");
-                dialog.setMessage("正在更新資料......");
-                dialog.setCancelable(false);
-                dialog.show();
+                mLoadDialog = new ProgressDialog(MainActivity.this);
+                mLoadDialog.setTitle("提示");
+                mLoadDialog.setMessage("正在更新資料......");
+                mLoadDialog.setCancelable(false);
+                mLoadDialog.show();
                 forcedUpdate72Data();
                 update72CustomerData();
             } else {
                 // 判断需要更新资料的公司，分别由40、72、XX
-                dialog = new ProgressDialog(MainActivity.this);
-                dialog.setTitle("提示");
-                dialog.setMessage("正在更新資料......");
-                dialog.setCancelable(false);
-                dialog.show();
+                mLoadDialog = new ProgressDialog(MainActivity.this);
+                mLoadDialog.setTitle("提示");
+                mLoadDialog.setMessage("正在更新資料......");
+                mLoadDialog.setCancelable(false);
+                mLoadDialog.show();
                 update40CustomerData();
                 updateMaterialData();
                 updateMaterialCorrespondenceData();
@@ -1096,13 +1201,17 @@ public class MainActivity extends BaseActivity {
             if (b) {
                 Toast.makeText(MainActivity.this, "您有未提交成功訂單，請完成！", Toast.LENGTH_SHORT).show();
             } else {
-                if (first != null) {
-                    int refund = first.getMaterialRefundNum();
-                    int deposite = first.getMaterialDepositeNum();
-                    if (refund == 0 && deposite == 0) {
-                        showLoginOutDialog();
+                if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
+                    if (first != null) {
+                        int refund = first.getMaterialRefundNum();
+                        int deposite = first.getMaterialDepositeNum();
+                        if (refund == 0 && deposite == 0) {
+                            showLoginOutDialog();
+                        } else {
+                            Toast.makeText(MainActivity.this, "您有物料未結算，請完成！", Toast.LENGTH_SHORT).show();
+                        }
                     } else {
-                        Toast.makeText(MainActivity.this, "您有物料未結算，請完成！", Toast.LENGTH_SHORT).show();
+                        showLoginOutDialog();
                     }
                 } else {
                     showLoginOutDialog();
@@ -1176,11 +1285,11 @@ public class MainActivity extends BaseActivity {
      * 登出
      */
     private void callNetLoginOut() {
-        dialog = new ProgressDialog(this);
-        dialog.setTitle("提示");
-        dialog.setMessage("正在退出系統......");
-        dialog.setCancelable(false);
-        dialog.show();
+        mLoadDialog = new ProgressDialog(this);
+        mLoadDialog.setTitle("提示");
+        mLoadDialog.setMessage("正在退出系統......");
+        mLoadDialog.setCancelable(false);
+        mLoadDialog.show();
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
         paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
@@ -1197,19 +1306,19 @@ public class MainActivity extends BaseActivity {
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            dialog.dismiss();
+                            mLoadDialog.dismiss();
                             System.exit(0);
                         }
                     }, 3000);
                 } else {
-                    dialog.dismiss();
+                    mLoadDialog.dismiss();
                     Toast.makeText(MainActivity.this, "登出失敗，請重試", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onError(Throwable ex, boolean isOnCallback) {
-                dialog.dismiss();
+                mLoadDialog.dismiss();
                 if (ex instanceof java.net.SocketTimeoutException) {
                     Toast.makeText(MainActivity.this, "網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
                 } else {
@@ -1226,5 +1335,359 @@ public class MainActivity extends BaseActivity {
             public void onFinished() {
             }
         });
+    }
+
+    /**
+     * 拉取车队本车次所有数据
+     */
+    private void pullInvoiceThisTime() {
+        mLoadDialog = new ProgressDialog(this);
+        mLoadDialog.setTitle("提示");
+        mLoadDialog.setMessage("正在拉取車隊本車次所有數據......");
+        mLoadDialog.setCancelable(false);
+        mLoadDialog.show();
+        try {
+            // 獲取車次
+            long trunkNumber = 1;
+            TrainsInfo refundfirst = TMSApplication.db.findFirst(TrainsInfo.class);
+            if (refundfirst != null) {
+                trunkNumber = TMSCommonUtils.searchTrainsInfoMaxTimes() + 1;
+            }
+
+            Map<String, String> paramsMap = new HashMap<>();
+            paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
+            paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
+            paramsMap.put("truckID", TMSShareInfo.mUserModelList.get(0).getTruckID());
+            paramsMap.put("truckNumber", String.valueOf(trunkNumber));
+            RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_TRUNK_INVOICE + TMSCommonUtils.createLinkStringByGet(paramsMap));
+            params.setConnectTimeout(30 * 1000);
+            String uri = params.getUri();
+            x.http().get(params, new Callback.CommonCallback<String>() {
+                @Override
+                public void onSuccess(String result) {
+                    CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
+                    if (commonModel.getCode() == 0) {
+                        String invoiceJson = TMSCommonUtils.decode(commonModel.getData());
+                        List<InvoiceThisVhiclePullModel> list = new Gson().fromJson(invoiceJson, new TypeToken<List<InvoiceThisVhiclePullModel>>() {}.getType());
+                        if (list.size() > 0) {
+                            List<SubmitInvoiceInfo> all = null;
+                            try {
+                                all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
+                                if (all == null) {
+                                    all = new ArrayList<>();
+                                }
+                            } catch (DbException e) {
+
+                            }
+
+                            for (InvoiceThisVhiclePullModel pullInvoiceModel : list) {
+                                boolean isExit = false;
+                                for (SubmitInvoiceInfo submitInvoiceList : all) {
+                                    if (pullInvoiceModel.getHeader().getInvoiceNo().equals(submitInvoiceList.getInvoiceNo()) || pullInvoiceModel.getHeader().getInvoiceNo().equals(submitInvoiceList.getSunInvoiceNo())){
+                                        isExit = true;
+                                    }
+                                }
+
+                                if (!isExit) {
+                                    // 插入該條數據
+                                    try {
+                                        List<DeliverInvoiceModel> deliverInvoiceModelList = pullInvoiceModel.transModelToDB(pullInvoiceModel.getLine());
+                                        // 物料送出/回收记录
+                                        SubmitInvoiceInfo mSubmitInvoiceInfo = new SubmitInvoiceInfo();
+                                        mSubmitInvoiceInfo.setOrderBody(new Gson().toJson(deliverInvoiceModelList));
+                                        mSubmitInvoiceInfo.setRefrence(pullInvoiceModel.getHeader().getReference());
+                                        mSubmitInvoiceInfo.setSalesmanId(pullInvoiceModel.getHeader().getOperationID());
+                                        mSubmitInvoiceInfo.setCustomerID(pullInvoiceModel.getHeader().getCustomerID());
+                                        mSubmitInvoiceInfo.setCustomerName(pullInvoiceModel.getHeader().getCustomerName());
+                                        mSubmitInvoiceInfo.setInvoiceNo(pullInvoiceModel.getHeader().getInvoiceNo());
+                                        mSubmitInvoiceInfo.setDepositStatus(1);
+                                        mSubmitInvoiceInfo.setRefundStatus(1);
+                                        TMSApplication.db.save(mSubmitInvoiceInfo);
+
+                                        //插入物料記錄
+                                        for (DeliverInvoiceModel deliverInvoiceModel : deliverInvoiceModelList) {
+                                            int depositNum = 0;
+                                            int refundNum = 0;
+
+                                            // 查詢該物料原本有多少回收及送出物料
+                                            List<MaterialNumberInfo> allMaterialNumber = TMSApplication.db.selector(MaterialNumberInfo.class).where("material_number_id", "=", deliverInvoiceModel.getMaterialId()).findAll();
+                                            if(allMaterialNumber == null) {
+                                                allMaterialNumber = new ArrayList<>();
+                                            }
+                                            for(MaterialNumberInfo model : allMaterialNumber) {
+                                                depositNum = model.getMaterialDepositeNum();
+                                                refundNum = model.getMaterialRefundNum();
+                                            }
+
+                                            // 修改物料總數量
+                                            if (deliverInvoiceModel.getSendOutNum() > 0) {
+                                                WhereBuilder b = WhereBuilder.b();
+                                                b.and("material_number_id","=", deliverInvoiceModel.getMaterialId()); //构造修改的条件
+                                                KeyValue name = new KeyValue("material_deposite_num", depositNum + deliverInvoiceModel.getSendOutNum());
+                                                TMSApplication.db.update(MaterialNumberInfo.class,b,name);
+                                            }
+
+                                            if (deliverInvoiceModel.getRecycleNum() > 0) {
+                                                WhereBuilder b = WhereBuilder.b();
+                                                b.and("material_number_id","=", deliverInvoiceModel.getMaterialId()); //构造修改的条件
+                                                KeyValue name = new KeyValue("material_refund_num", refundNum + deliverInvoiceModel.getRecycleNum());
+                                                TMSApplication.db.update(MaterialNumberInfo.class,b,name);
+                                            }
+                                        }
+
+                                    } catch (DbException e) {
+                                        e.printStackTrace();
+                                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "拉取發票信息異常：" + e.getStackTrace() + "\n" + new Gson().toJson(pullInvoiceModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Error");
+                                    }
+                                }
+                            }
+                        }
+
+                        startActivity(new Intent(MainActivity.this, CloseAccountActivity.class));
+                    } else {
+                        Toast.makeText(MainActivity.this, String.valueOf(commonModel.getMessage()), Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onError(Throwable ex, boolean isOnCallback) {
+                    if (ex instanceof java.net.SocketTimeoutException) {
+                        Toast.makeText(MainActivity.this, "網絡連接超時，請重試", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, "獲取資料失敗，請重新提交", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onCancelled(CancelledException cex) {
+                }
+
+                @Override
+                public void onFinished() {
+                    mLoadDialog.dismiss();
+                }
+            });
+        } catch (DbException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "未獲取到車次，請重試或聯繫技術人員！" + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * 確認分車
+     */
+    private void confrimInvoiceDivide() {
+        mLoadDialog = new ProgressDialog(this);
+        mLoadDialog.setTitle("請稍等");
+        mLoadDialog.setMessage("正在檢查您的操作狀態......");
+        mLoadDialog.setCancelable(false);
+        mLoadDialog.show();
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
+        paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
+        paramsMap.put("IMEI", TMSShareInfo.IMEI);
+        paramsMap.put("salesmanid", TMSShareInfo.mUserModelList.get(0).getSalesmanID());
+        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.CHECK_ONLINE_USER + TMSCommonUtils.createLinkStringByGet(paramsMap));
+        x.http().get(params, new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                final CommonModel commonModel = new  Gson().fromJson(result, CommonModel.class);
+                if (commonModel.getCode() == 0) {
+                    // 判斷目前倉庫日結方式拉取發票
+                    if (commonModel.getData().equals("2")) {
+                        dismissDialog();
+                        // 按照出倉日期方式则拉取一个月前到目前的發票
+                        callNetPushSplitInvoices(TMSCommonUtils.getLastMonthDate(), TMSCommonUtils.getTomorrowDate());
+                    } else {
+                        dismissDialog();
+                        // 按照發票日期則需要選擇時間
+                        InvoiceDivideByDate();
+                    }
+                } else {
+                    dismissDialog();
+                    //當用沒被鎖定則提示用戶操作分車將鎖定用戶
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("系統提示")
+                            .setMessage(String.valueOf(commonModel.getMessage()) + "，您的賬戶已被其他設備鎖定，請先退出或聯繫辦公人員解除鎖定!")
+                            .setPositiveButton("確定",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    })
+
+                            .create()
+                            .show();
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                dismissDialog();
+                doCheckOut();
+                Toast.makeText(MainActivity.this, "檢查用戶狀態異常！", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+
+            }
+
+            @Override
+            public void onFinished() {
+                dismissDialog();
+            }
+        });
+    }
+
+    /**
+     * 按發票日期方式拉取發票分車
+     */
+    private void InvoiceDivideByDate() {
+        // 獲取分車方式，傳統為獲取今明兩天發票，新版為獲取未出車發票
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("选择日期")
+                .setMessage("請選擇分車日期!")
+                .setPositiveButton("今天",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                                callNetPushSplitInvoices(TMSCommonUtils.getTimeToday(), "0001-01-01");
+                            }
+                        })
+                .setNegativeButton("明天", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        callNetPushSplitInvoices(TMSCommonUtils.getTomorrowDate(), "0001-01-01");
+                    }
+                })
+                .setNeutralButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mLoadDialog = new ProgressDialog(MainActivity.this);
+                        mLoadDialog.setTitle("加載");
+                        mLoadDialog.setMessage("正在退出操作......");
+                        mLoadDialog.setCancelable(false);
+                        mLoadDialog.show();
+                        doCheckOut();
+                        dialog.dismiss();
+                    }
+                })
+                .create()
+                .show();
+    }
+
+    /**
+     * 拉取分車列表
+     */
+    private void callNetPushSplitInvoices(String startDate, String endDate) {
+        mLoadDialog = new ProgressDialog(this);
+        mLoadDialog.setTitle("請稍等");
+        mLoadDialog.setMessage("正在拉取發票，該操作可能需要一段時間，請勿息屏......");
+        mLoadDialog.setCancelable(false);
+        mLoadDialog.show();
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
+        paramsMap.put("DriverID", TMSShareInfo.mUserModelList.get(0).getDriverID());
+        paramsMap.put("StartDate", startDate);
+        paramsMap.put("EndDate", endDate);
+        paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
+        //paramsMap.put("salesmanid", TMSShareInfo.mUserModelList.get(0).getSalesmanID());
+        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_SPLIT_INVOICE + TMSCommonUtils.createLinkStringByGet(paramsMap));
+        params.setConnectTimeout(1 * 60 * 1000);
+        x.http().get(params, new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                CommonModel model = new Gson().fromJson(result, CommonModel.class);
+                if (model.getCode() == 0) {
+                    String invoiceJson = TMSCommonUtils.decode(model.getData());
+                    Intent intent1 = new Intent(MainActivity.this, ChooseTrainNumActivity.class);
+                    intent1.putExtra("InvoiceList", invoiceJson);
+                    startActivity(intent1);
+
+                    dismissDialog();
+                } else {
+                    doCheckOut();
+                    dismissDialog();
+                    Toast.makeText(MainActivity.this, "拉取分車發票失敗！" + String.valueOf(model.getMessage()), Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                doCheckOut();
+                dismissDialog();
+                Toast.makeText(MainActivity.this, "拉取分車發票異常！", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+
+            }
+
+            @Override
+            public void onFinished() {
+                dismissDialog();
+            }
+        });
+    }
+
+    /**
+     * 登出操作
+     */
+    private void doCheckOut() {
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
+        paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
+        paramsMap.put("DriverID", TMSShareInfo.mUserModelList.get(0).getDriverID());
+        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.CHECK_OUT_OCCUPY + TMSCommonUtils.createLinkStringByGet(paramsMap));
+        x.http().get(params, new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                CommonModel model = new Gson().fromJson(result, CommonModel.class);
+                if (model.getCode() == 0) {
+                } else {
+                    Toast.makeText(MainActivity.this,  String.valueOf(model.getMessage()) + "，退出操作失败，请重试！", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+                Toast.makeText(MainActivity.this, "退出操作異常，请重试或聯繫IT人員！", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+
+            }
+
+            @Override
+            public void onFinished() {
+                dismissDialog();
+            }
+        });
+    }
+
+    /**
+     * 关闭loadingdialog
+     */
+    private void dismissDialog() {
+        if (mLoadDialog != null) {
+            if (mLoadDialog.isShowing()) {
+                mLoadDialog.dismiss();
+            }
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK
+                && event.getAction() == KeyEvent.ACTION_DOWN) {
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

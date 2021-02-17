@@ -1,1 +1,2 @@
+include ':materialdatatest'
 include ':app'

@@ -9,10 +9,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.GridView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -24,10 +22,9 @@ import androidx.annotation.Nullable;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
-import com.youcoupon.john_li.transportationapp.TMSAdapter.InvoiceStateAdapter;
-import com.youcoupon.john_li.transportationapp.TMSAdapter.MainAdapter;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceStateInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
+import com.youcoupon.john_li.transportationapp.TMSService.SubmitFailIntentStateService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.ScannerRevicer;
 import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
@@ -38,7 +35,6 @@ import org.xutils.common.util.KeyValue;
 import org.xutils.db.sqlite.WhereBuilder;
 import org.xutils.ex.DbException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**

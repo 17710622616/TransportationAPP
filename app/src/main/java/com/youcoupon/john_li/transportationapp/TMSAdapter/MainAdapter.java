@@ -58,7 +58,7 @@ public class MainAdapter extends BaseAdapter {
             }
 
             holder.text.setText(list.get(i));
-            if (i == 5) {
+            if (list.get(i).equals("數據更新")) {
                 if (TMSCommonUtils.getUserFor40(mContext) != null) {
                     if (TMSCommonUtils.getUserFor40(mContext).isInvoiceTbStatus() && TMSCommonUtils.getUserFor40(mContext).isCustomerTbStatus()) {
                         holder.warmingIv.setVisibility(View.GONE);

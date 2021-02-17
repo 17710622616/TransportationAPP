@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView
+            android:id="@+id/car_split_head_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <ScrollView
+                android:id="@+id/car_split_sv"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
+
+                <RadioGroup
+                    android:id="@+id/car_split_rb"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <RadioButton
+                        android:id="@+id/car_split_not_divided"
+                        style="@style/trainNumBtnCarSplit"
+                        android:text="未分車"/>
+
+                    <RadioButton
+                        android:id="@+id/car_split_first"
+                        style="@style/trainNumBtnCarSplit"
+                        android:text="第一車" />
+
+                    <RadioButton
+                        android:id="@+id/car_split_second"
+                        style="@style/trainNumBtnCarSplit"
+                        android:text="第二車" />
+
+                    <RadioButton
+                        android:id="@+id/car_split_thrid"
+                        style="@style/trainNumBtnCarSplit"
+                        android:text="第三車" />
+
+                    <RadioButton
+                        android:id="@+id/car_split_fourth"
+                        style="@style/trainNumBtnCarSplit"
+                        android:text="第四車" />
+
+                    <RadioButton
+                        android:id="@+id/car_split_fifth"
+                        style="@style/trainNumBtnCarSplit"
+                        android:text="第五車" />
+
+                    <RadioButton
+                        android:id="@+id/car_split_not_arrange"
+                        style="@style/trainNumBtnCarSplit"
+                        android:text="未能安排" />
+                </RadioGroup>
+            </ScrollView>
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="9">
+
+                <com.bin.david.form.core.SmartTable
+                    android:id="@+id/car_split_table"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+
+                <!--底部數據列表-->
+                <RelativeLayout
+                    android:id="@+id/car_split_analysis_rl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/shape_car_split_statistics"
+                    android:layout_marginLeft="3dp"
+                    android:layout_gravity="bottom">
+
+                    <LinearLayout
+                        android:id="@+id/car_split_arrow_ll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="160dp">
+                        <ImageView
+                            android:layout_width="25dp"
+                            android:layout_height="25dp"
+                            android:scaleType="centerInside"
+                            android:src="@mipmap/arrow_right"
+                            android:layout_marginLeft="5dp"
+                            android:layout_gravity="center_vertical"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/car_split_goods_qty"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="货量：0"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="26sp"
+                        android:layout_marginTop="15dp"
+                        android:layout_marginLeft="15dp"
+                        android:layout_toRightOf="@id/car_split_arrow_ll"/>
+
+                    <TextView
+                        android:id="@+id/car_split_customer_qty"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="客户：0"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="26sp"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginLeft="15dp"
+                        android:layout_below="@id/car_split_goods_qty"
+                        android:layout_toRightOf="@id/car_split_arrow_ll"/>
+
+                    <TextView
+                        android:id="@+id/car_split_move"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="移動"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="30sp"
+                        android:layout_marginTop="15dp"
+                        android:layout_marginRight="15dp"
+                        android:padding="15dp"
+                        android:background="@color/color_white"
+                        android:layout_alignParentRight="true"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_below="@id/car_split_customer_qty"
+                        android:layout_toRightOf="@id/car_split_arrow_ll">
+                        <TextView
+                            android:id="@+id/car_split_canned_qty"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="罐\n0"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorBlack"
+                            android:textSize="20sp"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginLeft="15dp"
+                            android:layout_marginBottom="3dp"
+                            android:gravity="center"/>
+
+                        <TextView
+                            android:id="@+id/car_split_plastic_qty"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="膠\n0"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorBlack"
+                            android:textSize="20sp"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginLeft="15dp"
+                            android:gravity="center"/>
+
+                        <TextView
+                            android:id="@+id/car_split_paper_qty"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="紙\n0"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorBlack"
+                            android:textSize="20sp"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginLeft="15dp"
+                            android:gravity="center"/>
+
+                        <TextView
+                            android:id="@+id/car_split_bottle_qty"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="樽\n0"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorBlack"
+                            android:textSize="20sp"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginLeft="15dp"
+                            android:gravity="center"/>
+                    </LinearLayout>
+                </RelativeLayout>
+
+                <!--loading視圖-->
+                <ImageView
+                    android:id="@+id/car_split_unfold"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@mipmap/arrow_left"
+                    android:layout_gravity="bottom|right"
+                    android:layout_marginBottom="70dp"
+                    android:layout_marginRight="15dp"
+                    android:visibility="gone"/>
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.youcoupon.john_li.transportationapp.TMSView.InterraptorLinnearView
+        android:id="@+id/car_split_loading"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/aplahBlack"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <ProgressBar
+            android:layout_width="50dp"
+            android:layout_height="50dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="加载中......"/>
+    </com.youcoupon.john_li.transportationapp.TMSView.InterraptorLinnearView>
+</FrameLayout>

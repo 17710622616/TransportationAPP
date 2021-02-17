@@ -17,7 +17,8 @@ public class UserModel {
     // 密碼
     private String passWord;
     // 車隊id
-    private String TrunkId;
+    private String TruckID;
+    // 司機ID
     private String DriverID;
     // 登錄時間
     private String loginTime;
@@ -106,12 +107,12 @@ public class UserModel {
         this.passWord = passWord;
     }
 
-    public String getTrunkId() {
-        return TrunkId;
+    public String getTruckID() {
+        return TruckID;
     }
 
-    public void setTrunkId(String trunkId) {
-        this.TrunkId = trunkId;
+    public void setTruckID(String truckID) {
+        TruckID = truckID;
     }
 
     public String getLoginTime() {

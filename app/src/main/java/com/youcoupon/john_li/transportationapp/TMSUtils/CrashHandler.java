@@ -1,5 +1,6 @@
 package com.youcoupon.john_li.transportationapp.TMSUtils;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -8,6 +9,14 @@ import android.os.Environment;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
+import com.youcoupon.john_li.transportationapp.TMSActivity.CarSplitActivity;
+import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
+
+import org.xutils.common.Callback;
+import org.xutils.http.RequestParams;
+import org.xutils.x;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -98,6 +107,8 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
         if (ex == null) {
             return false;
         }
+        // 清除用户操作状态
+        doCheckOut();
         //收集设备参数信息
         collectDeviceInfo(mContext);
         //添加自定义信息
@@ -116,6 +127,41 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
         return true;
     }
 
+    /**
+     * 登出操作
+     */
+    private void doCheckOut() {
+        if (TMSShareInfo.mUserModelList == null) {
+            return;
+        }
+        if (TMSShareInfo.mUserModelList.size() <= 0) {
+            return;
+        }
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("corp", TMSShareInfo.mUserModelList.get(0).getCorp());
+        paramsMap.put("userid", TMSShareInfo.mUserModelList.get(0).getID());
+        paramsMap.put("DriverID", TMSShareInfo.mUserModelList.get(0).getDriverID());
+        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.CHECK_OUT_OCCUPY + TMSCommonUtils.createLinkStringByGet(paramsMap));
+        x.http().get(params, new Callback.CommonCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+            }
+
+            @Override
+            public void onError(Throwable ex, boolean isOnCallback) {
+            }
+
+
+            @Override
+            public void onCancelled(CancelledException cex) {
+
+            }
+
+            @Override
+            public void onFinished() {
+            }
+        });
+    }
 
     /**
      * 收集设备参数信息
@@ -186,7 +232,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
             String time = format.format(new Date());
             String fileName = "crash-" + time + "-" + timestamp + ".txt";
             if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-                String path = Environment.getExternalStorageDirectory() + "/hzdongcheng/log/";
+                String path = Environment.getExternalStorageDirectory() + "/TransportationAPP/log/";
                 File dir = new File(path);
                 if (!dir.exists()) {
                     dir.mkdirs();

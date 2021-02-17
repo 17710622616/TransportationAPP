@@ -8,9 +8,9 @@ package com.youcoupon.john_li.transportationapp.TMSUtils;
 public class TMSConfigor {
     // 測試url
     //public final static String BASE_URL = "http://202.100.100.151/";
-    public final static String BASE_URL = "http://202.100.100.33:10090/";
+    //public final static String BASE_URL = "http://202.100.100.33:10090/";
     // 正式url
-    //public final static String BASE_URL = "http://psamaterial.moccb.com/";
+    public final static String BASE_URL = "http://psamaterial.moccb.com/";
     // 登錄接口
     public final static String LOGIN_API = "api/Tools/CheckUser?";
     // 登出接口
@@ -33,6 +33,18 @@ public class TMSConfigor {
     public final static String SUBMIT_INVOICE_STATE = "api/Business/PostInvoiceStatistic?";
     // 提交物料结算接口
     public final static String SUBMIT_MATERIALS_SETTLEMENT = "api/Business/PostStockMovement?";
+    // 拉取車隊本車次所有發票
+    public final static String GET_TRUNK_INVOICE = "api/Business/GetTruckFDInvoice?";
+    // 檢查用戶是否登陸
+    public final static String CHECK_ONLINE_USER = "api/Tools/CheckOnlineUser?";
+    // 拉取分車發票列表
+    public final static String GET_SPLIT_INVOICE = "api/Basic/GetInvoiceList?";
+    // 退出分車操作
+    public final static String CHECK_OUT_OCCUPY = "api/Tools/CheckOutUser?";
+    // 提交分車數據
+    public static final String POST_TRUNK_SPLIT = "api/Business/PostTruckSplitInvoice?";
+    // 提交PDA定位
+    public static final  String POST_LOCATION = "/api/Business/PutPDALocation?";
 
     // OK打卡
     // 获取OK签到路线接口

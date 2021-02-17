@@ -1,9 +1,11 @@
 package com.youcoupon.john_li.transportationapp.TMSUtils;
 
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
+import android.app.Service;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -18,6 +20,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -29,16 +32,26 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationListener;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
+import com.google.zxing.common.StringUtils;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.CarSplitInvoiceDetialInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.TimingPositionInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
+import com.youcoupon.john_li.transportationapp.TMSModel.CarSplitInvoiceVM;
+import com.youcoupon.john_li.transportationapp.TMSModel.GPS;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
 
 import org.xutils.common.Callback;
+import org.xutils.db.sqlite.WhereBuilder;
 import org.xutils.ex.DbException;
 import org.xutils.http.HttpMethod;
 import org.xutils.http.RequestParams;
@@ -59,12 +72,15 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -86,12 +102,13 @@ public class TMSCommonUtils {
     /**
      * 图片两端所保留的空白的宽度
      */
-    private static int marginW=20;
+    private static int marginW = 20;
 
     /**
      * 条形码的编码类型
      */
-    private static BarcodeFormat barcodeFormat= BarcodeFormat.EAN_8;
+    private static BarcodeFormat barcodeFormat = BarcodeFormat.EAN_8;
+
     /**
      * 条形码编码
      * @param contents
@@ -127,22 +144,39 @@ public class TMSCommonUtils {
      * @param displayCode 是否在条形码下方显示内容
      * @return
      */
-    public static Bitmap creatBarcode(Context context, String contents, int desiredWidth, int desiredHeight, boolean displayCode){
-        Bitmap ruseltBitmap=null;
+    public static Bitmap creatBarcode(Context context, String contents, int desiredWidth, int desiredHeight, boolean displayCode) {
+        Bitmap ruseltBitmap = null;
         if (displayCode) {
-            Bitmap barcodeBitmap=encodeAsBitmap(contents, barcodeFormat, desiredWidth, desiredHeight);
-            Bitmap codeBitmap=creatCodeBitmap(contents, desiredWidth+2*marginW, desiredHeight, context);
-            ruseltBitmap=mixtureBitmap(barcodeBitmap, codeBitmap, new PointF(0, desiredHeight));
+            Bitmap barcodeBitmap = encodeAsBitmap(contents, barcodeFormat, desiredWidth, desiredHeight);
+            Bitmap codeBitmap = creatCodeBitmap(contents, desiredWidth + 2 * marginW, desiredHeight, context);
+            ruseltBitmap = mixtureBitmap(barcodeBitmap, codeBitmap, new PointF(0, desiredHeight));
         } else {
-            ruseltBitmap=encodeAsBitmap(contents,barcodeFormat, desiredWidth, desiredHeight);
+            ruseltBitmap = encodeAsBitmap(contents, barcodeFormat, desiredWidth, desiredHeight);
         }
 
         return ruseltBitmap;
     }
 
+    /**
+     * 字段是否为空
+     * @param str
+     * @return
+     */
+    public static boolean isEmptyString(String str) {
+        boolean b = false;
+        if (str != null) {
+            if (!str.equals("")) {
+                b = true;
+            }
+        }
+
+        return b;
+    }
+
     public static UserModel getUserFor40(Context context) {
         UserModel userModel = null;
-        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {
+        }.getType());
         for (UserModel model : userModelList) {
             if (model.getCorp().equals("40")) {
                 userModel = model;
@@ -157,7 +191,8 @@ public class TMSCommonUtils {
 
     public static UserModel getUserFor72(Context context) {
         UserModel userModel = null;
-        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {
+        }.getType());
         for (UserModel model : userModelList) {
             if (model.getCorp().equals("72")) {
                 userModel = model;
@@ -172,7 +207,8 @@ public class TMSCommonUtils {
 
     public static UserModel getUserForXX(Context context) {
         UserModel userModel = null;
-        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        List<UserModel> userModelList = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {
+        }.getType());
         for (UserModel model : userModelList) {
             if (model.getCorp().equals("XX")) {
                 userModel = model;
@@ -220,8 +256,8 @@ public class TMSCommonUtils {
      * @param context
      * @return
      */
-    protected static Bitmap creatCodeBitmap(String contents,int width,int height,Context context) {
-        TextView tv=new TextView(context);
+    protected static Bitmap creatCodeBitmap(String contents, int width, int height, Context context) {
+        TextView tv = new TextView(context);
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         tv.setLayoutParams(layoutParams);
         tv.setText(contents);
@@ -237,7 +273,7 @@ public class TMSCommonUtils {
                 tv.getMeasuredHeight());
 
         tv.buildDrawingCache();
-        Bitmap bitmapCode=tv.getDrawingCache();
+        Bitmap bitmapCode = tv.getDrawingCache();
         return bitmapCode;
     }
 
@@ -250,12 +286,12 @@ public class TMSCommonUtils {
      * @return
      * @throws WriterException
      */
-    protected  static Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int desiredWidth, int desiredHeight){
+    protected static Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int desiredWidth, int desiredHeight) {
         final int WHITE = 0xFFFFFFFF;
         final int BLACK = 0xFF000000;
 
         MultiFormatWriter writer = new MultiFormatWriter();
-        BitMatrix result=null;
+        BitMatrix result = null;
         try {
             result = writer.encode(contents, format, desiredWidth,
                     desiredHeight, null);
@@ -288,14 +324,14 @@ public class TMSCommonUtils {
      * @param fromPoint 第二个Bitmap开始绘制的起始位置（相对于第一个Bitmap）
      * @return
      */
-    protected static Bitmap mixtureBitmap(Bitmap first, Bitmap second,PointF fromPoint) {
+    protected static Bitmap mixtureBitmap(Bitmap first, Bitmap second, PointF fromPoint) {
         if (first == null || second == null || fromPoint == null) {
             return null;
         }
-        Bitmap newBitmap = Bitmap.createBitmap(first.getWidth()+second.getWidth()+marginW, first.getHeight()+second.getHeight()
+        Bitmap newBitmap = Bitmap.createBitmap(first.getWidth() + second.getWidth() + marginW, first.getHeight() + second.getHeight()
                 , Bitmap.Config.ARGB_4444);
         Canvas cv = new Canvas(newBitmap);
-        cv.drawBitmap(first,marginW,0,null);
+        cv.drawBitmap(first, marginW, 0, null);
         cv.drawBitmap(second, fromPoint.x, fromPoint.y, null);
         //cv.save(Canvas.ALL_SAVE_FLAG);
         cv.save();
@@ -360,6 +396,48 @@ public class TMSCommonUtils {
         return dateFormat.format(now);
     }
 
+    /**
+     * 獲取明天日期
+     * @return
+     */
+    public static String getTomorrowDate() {
+        Date now = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(now);
+        calendar.set(Calendar.DATE, calendar.get(Calendar.DATE) + 1);
+        Date tomorrow = calendar.getTime();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return dateFormat.format(tomorrow);
+    }
+
+    /**
+     * 獲取一个月日期
+     * @return
+     */
+    public static String getLastMonthDate() {
+        Date now = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(now);
+        calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) - 1);
+        Date tomorrow = calendar.getTime();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return dateFormat.format(tomorrow);
+    }
+
+    /**
+     * 获取系统一周前的时间
+     * @return
+     */
+    public static String getlastWeakTime() {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.WEEK_OF_YEAR, -1);
+        date = calendar.getTime();
+        return df.format(date);
+    }
+
     public static String createLinkStringByGet(Map<String, String> params) {
         String prestr = "";
         try {
@@ -368,7 +446,11 @@ public class TMSCommonUtils {
             for (int i = 0; i < keys.size(); i++) {
                 String key = keys.get(i);
                 String value = params.get(key);
-                value = URLEncoder.encode(value, "UTF-8");
+                if (value != null) {
+                    value = URLEncoder.encode(value, "UTF-8");
+                } else {
+                    value = "";
+                }
 
                 if (i == keys.size() - 1) {//拼接时，不包括最后一个&字符
                     prestr = prestr + key + "=" + value;
@@ -396,7 +478,7 @@ public class TMSCommonUtils {
             verCode = context.getPackageManager().getPackageInfo(
                     "com.youcoupon.john_li.transportationapp", 0).versionCode;
         } catch (PackageManager.NameNotFoundException e) {
-            Log.e("msg",e.getMessage());
+            Log.e("msg", e.getMessage());
         }
         return verCode;
     }
@@ -412,7 +494,7 @@ public class TMSCommonUtils {
             verName = context.getPackageManager().getPackageInfo(
                     "com.youcoupon.john_li.transportationapp", 0).versionName;
         } catch (PackageManager.NameNotFoundException e) {
-            Log.e("msg",e.getMessage());
+            Log.e("msg", e.getMessage());
         }
         return verName;
     }
@@ -420,7 +502,7 @@ public class TMSCommonUtils {
     /**
      * 參數加密方法
      **/
-    public static String encryptDES(String encryptString){
+    public static String encryptDES(String encryptString) {
         try {
 
             IvParameterSpec zeroIv = new IvParameterSpec(new byte[8]);
@@ -449,14 +531,14 @@ public class TMSCommonUtils {
     /**
      * data解密方法
      **/
-    public static String decryptDES(String decryptString){
+    public static String decryptDES(String decryptString) {
         try {
             byte[] byteMi = Base64.decode(decryptString, Base64.DEFAULT);
             IvParameterSpec zeroIv = new IvParameterSpec(new byte[8]);
             SecretKeySpec key = new SecretKeySpec(DESKey.getBytes(), "DES");
             Cipher cipher = null;
 
-                cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
+            cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
 
             cipher.init(Cipher.DECRYPT_MODE, key, zeroIv);
             byte decryptedData[] = cipher.doFinal(byteMi);
@@ -504,6 +586,7 @@ public class TMSCommonUtils {
             return null;
         }
     }
+
     // 对密钥进行处理
     private static Key getRawKey(String key) throws Exception {
         DESKeySpec dks = new DESKeySpec(key.getBytes());
@@ -575,7 +658,7 @@ public class TMSCommonUtils {
             //请求异常后的回调方法
             @Override
             public void onError(Throwable ex, boolean isOnCallback) {
-                Toast.makeText(context,  "獲取版本號失敗！" + ex.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(context, "獲取版本號失敗！" + ex.getMessage(), Toast.LENGTH_LONG).show();
                 m_newVerCode = "-1";
             }
 
@@ -601,8 +684,8 @@ public class TMSCommonUtils {
         int verCode = getVerCode(context.getApplicationContext());
         String verName = getVerName(context.getApplicationContext());
 
-        String str= "當前版本："+verName+" Code:"+verCode+" ,發現新版本："+
-                " Code:"+m_newVerCode+" ,是否更新？";
+        String str = "當前版本：" + verName + " Code:" + verCode + " ,發現新版本：" +
+                " Code:" + m_newVerCode + " ,是否更新？";
         Dialog dialog = new AlertDialog.Builder(context).setTitle("軟件更新").setMessage(str)
                 // 设置内容
                 .setPositiveButton("更新",// 设置确定按钮
@@ -637,10 +720,10 @@ public class TMSCommonUtils {
     private static void notNewVersionDlgShow(Context context) {
         int verCode = getVerCode(context.getApplicationContext());
         String verName = getVerName(context.getApplicationContext());
-        if(m_newVerCode.equals("-1")) {
+        if (m_newVerCode.equals("-1")) {
             //Toast.makeText(context, "獲取版本號失敗，請重試！", Toast.LENGTH_LONG).show();
         } else {
-            Toast.makeText(context, "當前版本:"+verName+" Code:"+verCode+",已經是最新版本!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "當前版本:" + verName + " Code:" + verCode + ",已經是最新版本!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -793,6 +876,26 @@ public class TMSCommonUtils {
     }
 
     /**
+     * 删除一个星期前的定位数据
+     * @return
+     */
+    public static boolean deleteSevenDaysAgoPosition() {
+        try {
+            List<TimingPositionInfo> users = TMSApplication.db.findAll(TimingPositionInfo.class);
+            if (users == null || users.size() == 0) {
+                return false;
+            }
+            WhereBuilder whereBuilder = WhereBuilder.b();
+            whereBuilder.and("creatTime", ">", getlastWeakTime());
+            TMSApplication.db.delete(TimingPositionInfo.class, whereBuilder);
+            return true;
+        } catch (DbException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
      * 更新APP
      */
     private void update(Context context) {
@@ -813,12 +916,13 @@ public class TMSCommonUtils {
         //设置显示的格式
         m_progressDlg.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         //设置按钮
-        m_progressDlg.setButton(ProgressDialog.BUTTON_NEGATIVE, "暫停",new DialogInterface.OnClickListener(){
+        m_progressDlg.setButton(ProgressDialog.BUTTON_NEGATIVE, "暫停", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 //点击取消正在下载的操作
                 cancelable.cancel();
-            }});
+            }
+        });
 
         m_progressDlg.show();
     }
@@ -828,7 +932,8 @@ public class TMSCommonUtils {
      */
     public static UserModel getUserInfoByCorp(Context context, String corp) {
         UserModel userModel = null;
-        List<UserModel> list = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
+        List<UserModel> list = new Gson().fromJson(String.valueOf(SpuUtils.get(context, "loginMsg", "")), new TypeToken<List<UserModel>>() {
+        }.getType());
         for (UserModel model : list) {
             userModel = model;
         }
@@ -849,9 +954,9 @@ public class TMSCommonUtils {
         float scaleWidth = 1000f, scaleHeight = 1333f;
         int be = 1;
         if (width > height | width > scaleWidth) {
-            be = (int)(opts.outWidth / scaleWidth);
+            be = (int) (opts.outWidth / scaleWidth);
         } else if (width < height && height > scaleHeight) {
-            be = (int)(opts.outHeight / scaleHeight);
+            be = (int) (opts.outHeight / scaleHeight);
         }
         if (be <= 0) {
             be = 1;
@@ -881,10 +986,10 @@ public class TMSCommonUtils {
         return base64;
     }
 
-    public static byte[] IntArrayToByteArray(byte[] Iarr){
+    public static byte[] IntArrayToByteArray(byte[] Iarr) {
         byte[] bytes = new byte[Iarr.length];
         for (int i = 0; i < Iarr.length; i++) {
-            bytes[i] = (byte)  (Iarr[i] & 0xFF);
+            bytes[i] = (byte) (Iarr[i] & 0xFF);
         }
         return bytes;
     }
@@ -1016,5 +1121,190 @@ public class TMSCommonUtils {
         } catch (Exception e) {
             Log.i("error:", e + "");
         }
+    }
+
+    /**
+     * 获取经纬度
+     *
+     * @return
+     */
+    public static List<Double> getLngAndLat(Context context) {
+        List<Double> lngAndLatList = new ArrayList<>();
+        lngAndLatList.add(0.0);
+        lngAndLatList.add(0.0);
+        /****************************************高德地图定位********************************************/
+        //可在其中解析amapLocation获取相应内容。
+        //声明AMapLocationClient类对象,初始化定位
+        AMapLocationClient mLocationClient = new AMapLocationClient(context.getApplicationContext());
+        //设置定位回调监听
+        mLocationClient.setLocationListener(new MyAMapLocationListener(context, TMSCommonUtils.getTimeNow()));
+        //启动定位
+        mLocationClient.startLocation();
+        //声明AMapLocationClientOption对象
+        AMapLocationClientOption mLocationOption = new AMapLocationClientOption();
+        /**
+         * 设置定位场景，目前支持三种场景（签到、出行、运动，默认无场景）
+         */
+        mLocationOption.setLocationPurpose(AMapLocationClientOption.AMapLocationPurpose.SignIn);
+        if(null != mLocationClient){
+            mLocationClient.setLocationOption(mLocationOption);
+            //设置场景模式后最好调用一次stop，再调用start以保证场景模式生效
+            mLocationClient.stopLocation();
+            mLocationClient.startLocation();
+        }
+        //设置定位模式为AMapLocationMode.Hight_Accuracy，高精度模式。
+        mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+        //获取一次定位结果：
+        //该方法默认为false。
+        //mLocationOption.setOnceLocation(true);
+        //获取最近3s内精度最高的一次定位结果：
+        //设置setOnceLocationLatest(boolean b)接口为true，启动定位时SDK会返回最近3s内精度最高的一次定位结果。如果设置其为true，setOnceLocation(boolean b)接口也会被设置为true，反之不会，默认为false。
+        //mLocationOption.setOnceLocationLatest(true);
+        //设置定位间隔,单位毫秒,默认为2000ms，最低1000ms。
+        //mLocationOption.setInterval(1000);
+        //设置是否允许模拟位置,默认为true，允许模拟位置
+        //mLocationOption.setMockEnable(true);
+        //单位是毫秒，默认30000毫秒，建议超时时间不要低于8000毫秒。
+        mLocationOption.setHttpTimeOut(60 * 1000);
+        //关闭缓存机制
+        //mLocationOption.setLocationCacheEnable(false);
+        //给定位客户端对象设置定位参数
+        mLocationClient.setLocationOption(mLocationOption);
+        if (!mLocationClient.isStarted()) {
+            //启动定位
+            mLocationClient.startLocation();
+        }
+        //停止定位后，本地定位服务并不会被销毁
+        //mLocationClient.stopLocation();
+        return lngAndLatList;
+    }
+
+    //异步获取定位结果
+    public static class MyAMapLocationListener implements AMapLocationListener {
+        private Context mContext;
+        private String mStartTime;
+        public MyAMapLocationListener(Context context, String startTime) {
+            this.mContext = context;
+            this.mStartTime = startTime;
+        }
+
+        @Override
+        public void onLocationChanged(AMapLocation amapLocation) {
+            if (amapLocation != null) {
+                if (amapLocation.getErrorCode() == 0) {
+                    // 转换为GPS坐标
+                    GPS gpsModel = GPSConverterUtils.gcj_To_Gps84(amapLocation.getLatitude(), amapLocation.getLongitude());
+                    Log.e("地图定位",gpsModel.getLat() + "," + gpsModel.getLon());
+                    // 存入地图定位
+                    TimingPositionInfo info = new TimingPositionInfo();
+                    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Date date = new Date(amapLocation.getTime());
+                    info.setPositionTime(df.format(date));//定位时间
+                   info.setCreatTime(mStartTime);
+                    info.setDeviceNo(TMSCommonUtils.getIMEI(mContext));
+                    // 获取当前定位
+                    //List<Double> lngAndLatList = TMSCommonUtils.getLngAndLat(mContext.getApplicationContext());
+                    info.setLongtitude(String.valueOf(gpsModel.getLon()));
+                    info.setLantitude(String.valueOf(gpsModel.getLat()));
+
+                    info.setStatus(0);
+                    String userid = "0";
+                    if (TMSShareInfo.mUserModelList.size() > 0) {
+                        if (TMSShareInfo.mUserModelList.get(0) != null) {
+                            if (TMSCommonUtils.isEmptyString(TMSShareInfo.mUserModelList.get(0).getID())) {
+                                userid = TMSShareInfo.mUserModelList.get(0).getID();
+                            }
+                        }
+                    }
+
+
+                    info.setUserid(userid);
+                    //用集合向child_info表中插入多条数据
+                    //db.save()方法不仅可以插入单个对象，还能插入集合
+                    try {
+                        TMSApplication.db.save(info);
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "定位完成：当前时间" + TMSCommonUtils.getTimeNow() + "\n", new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Today_log.txt");
+                    } catch (DbException e) {
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "定位信息保存数据库失败：DB.TimingPositionService.save():\n" + new Gson().toJson(info) + "\n" + e.getMessage(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor.txt");
+                        e.printStackTrace();
+                    }
+
+                }else {
+                    //定位失败时，可通过ErrCode（错误码）信息来确定失败的原因，errInfo是错误信息，详见错误码表。
+                    Log.e("AmapError","location Error, ErrCode:"
+                            + amapLocation.getErrorCode() + ", errInfo:"
+                            + amapLocation.getErrorInfo());
+                }
+            }
+        }
+    }
+
+    /**
+     * 获取设备IMEI
+     * @param context
+     * @return
+     */
+    public static String getIMEI(Context context) {
+        try {
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Service.TELEPHONY_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                return tm.getImei();
+            } else {
+                return tm.getDeviceId();
+            }
+        } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "获取设备号异常：getIMEI():\n" + e.getMessage(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor.txt");
+            return "";
+        }
+    }
+
+    /**
+     * 判断服务是否开启
+     *
+     * @return
+     */
+    public static boolean isServiceRunning(Context context, String ServiceName) {
+        if (("").equals(ServiceName) || ServiceName == null)
+            return false;
+        ActivityManager myManager = (ActivityManager) context
+                .getSystemService(Context.ACTIVITY_SERVICE);
+        ArrayList<ActivityManager.RunningServiceInfo> runningService = (ArrayList<ActivityManager.RunningServiceInfo>) myManager
+                .getRunningServices(30);
+        for (int i = 0; i < runningService.size(); i++) {
+            if (runningService.get(i).service.getClassName().toString()
+                    .equals(ServiceName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 按照某個字段去重
+     */
+    public static List<CarSplitInvoiceVM.Line> checkLoginList(List<CarSplitInvoiceVM.Line> list) {
+        /*List<CarSplitInvoiceVM.Line> newList = new ArrayList<CarSplitInvoiceVM.Line>();
+
+        HashMap<String, String> map = new HashMap<String, String>();
+        for (CarSplitInvoiceVM.Line user : list) {
+            String userName = user.getMerchandiseID();
+            String value = map.get(userName);
+            if (value == null) { //如果value是空的  说明取到的这个name是第一次取到
+                map.put(userName, userName);
+                newList.add(user); //newList就是我们想要的去重之后的结果
+            }
+        }*/
+
+        List<CarSplitInvoiceVM.Line> newList = new ArrayList<CarSplitInvoiceVM.Line>();
+        Set<String> set = new HashSet<String>();
+        for (CarSplitInvoiceVM.Line user : list) {
+            String userName = user.getMerchandiseID();
+            if (!set.contains(userName)) { //set中不包含重复的
+                set.add(userName);
+                newList.add(user);
+            }
+        }
+
+        return newList;
     }
 }

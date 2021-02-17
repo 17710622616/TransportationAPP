@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView
+        android:id="@+id/choose_trains_head_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/choose_trains_not_divided"
+                android:text="未分車"
+                style="@style/trainNumBtn"/>
+            <TextView
+                android:id="@+id/choose_trains_first"
+                android:text="第一車"
+                style="@style/trainNumBtn"/>
+            <TextView
+                android:id="@+id/choose_trains_second"
+                android:text="第二車"
+                style="@style/trainNumBtn"/>
+            <TextView
+                android:id="@+id/choose_trains_thrid"
+                android:text="第三車"
+                style="@style/trainNumBtn"/>
+            <TextView
+                android:id="@+id/choose_trains_fourth"
+                android:text="第四車"
+                style="@style/trainNumBtn"/>
+            <TextView
+                android:id="@+id/choose_trains_fifth"
+                android:text="第五車"
+                style="@style/trainNumBtn"/>
+            <TextView
+                android:id="@+id/choose_trains_not_arrange"
+                android:text="未能安排"
+                style="@style/trainNumBtn"
+                android:textSize="28sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

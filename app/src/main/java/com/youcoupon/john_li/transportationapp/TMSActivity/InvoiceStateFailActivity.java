@@ -8,6 +8,7 @@ import android.widget.ListView;
 import com.youcoupon.john_li.transportationapp.R;
 import com.youcoupon.john_li.transportationapp.TMSAdapter.InvoiceStateListAdapter;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceStateInfo;
+import com.youcoupon.john_li.transportationapp.TMSService.SubmitFailIntentStateService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 

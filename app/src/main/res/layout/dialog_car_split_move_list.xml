@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="260dp"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="請選擇移動至車組"
+        android:textSize="20sp"
+        android:textColor="@color/colorWight"
+        android:padding="10dp"
+        android:gravity="center"
+        android:background="@color/colorPrimary"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/dialog_not_divided"
+            android:text="未分車"
+            style="@style/dialogTrainNumBtn"/>
+        <TextView
+            android:id="@+id/dialog_first"
+            android:text="第一車"
+            style="@style/dialogTrainNumBtn"/>
+        <TextView
+            android:id="@+id/dialog_second"
+            android:text="第二車"
+            style="@style/dialogTrainNumBtn"/>
+        <TextView
+            android:id="@+id/dialog_thrid"
+            android:text="第三車"
+            style="@style/dialogTrainNumBtn"/>
+        <TextView
+            android:id="@+id/dialog_fourth"
+            android:text="第四車"
+            style="@style/dialogTrainNumBtn"/>
+        <TextView
+            android:id="@+id/dialog_fifth"
+            android:text="第五車"
+            style="@style/dialogTrainNumBtn"/>
+        <TextView
+            android:id="@+id/dialog_not_arrange"
+            android:text="未能安排"
+            style="@style/dialogTrainNumBtn"/>
+    </LinearLayout>
+</LinearLayout>

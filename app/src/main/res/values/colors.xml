@@ -11,8 +11,10 @@
     <color name="colorWight">#FFFFFF</color>
     <color name="colorMineGray">#F5F5F5</color>
     <color name="colorCommentGray">#F4F4F4</color>
+    <color name="colorOrderStatisticsGray">#E0E0E0</color>
     <color name="colorLightGray">#fdfdfd</color>
     <color name="colorLineGray">#c9c9c9</color>
+    <color name="colorChooseDrakGray">#a0a0a0</color>
     <color name="colorDrakGray">#707070</color>
     <color name="colorOrderGray">#434345</color>
     <color name="colorBlack">#000000</color>
@@ -29,6 +31,7 @@
     <color name="colorNewGreen">#53EEBD</color>
     <color name="colorAlpha">#00000000</color>
     <color name="colorHalfAlpha">#00c9c9c9</color>
+    <color name="colorBlackHalfAlpha">#66000000</color>
     <color name="colorSubmitGreen">#37C972</color>
     <color name="aplahOrenge">#88F45428</color>
     <color name="aplahBlack">#55000000</color>

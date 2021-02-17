@@ -150,49 +150,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
             }
         } catch (DbException e) {
             e.printStackTrace();
-        }
-        /*DeliverInvoiceModel model = new DeliverInvoiceModel();
-        model.setMaterialId("013A");
-        model.setMaterialName("木卡板");
-        model.setSendOutNum(0);
-        model.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model);
-        DeliverInvoiceModel model1 = new DeliverInvoiceModel();
-        model1.setMaterialId("013B");
-        model1.setMaterialName("膠卡板(大)");
-        model1.setSendOutNum(0);
-        model1.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model1);
-        DeliverInvoiceModel model2 = new DeliverInvoiceModel();
-        model2.setMaterialId("013D");
-        model2.setMaterialName("專用膠卡板");
-        model2.setSendOutNum(0);
-        model2.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model2);
-        DeliverInvoiceModel model3 = new DeliverInvoiceModel();
-        model3.setMaterialId("013C");
-        model3.setMaterialName("膠片(5加侖)");
-        model3.setSendOutNum(0);
-        model3.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model3);
-        DeliverInvoiceModel model4 = new DeliverInvoiceModel();
-        model4.setMaterialId("014");
-        model4.setMaterialName("5加侖吉膠桶");
-        model4.setSendOutNum(0);
-        model4.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model4);
-        DeliverInvoiceModel model5 = new DeliverInvoiceModel();
-        model5.setMaterialId("015");
-        model5.setMaterialName("飛雪吉膠箱");
-        model5.setSendOutNum(0);
-        model5.setRecycleNum(0);
-        mDeliverInvoiceModelList.add(model5);
-        MaterialNumberInfo materialNumberInfo6 = new MaterialNumberInfo();
-        materialNumberInfo6.setMaterialId("013E");
-        materialNumberInfo6.setMaterialName("綠色膠卡板");
-        materialNumberInfo6.setMaterialRefundNum(0);
-        materialNumberInfo6.setMaterialDepositeNum(0);
-        TMSApplication.db.save(materialNumberInfo6);*/
+        } 
     }
 
     @Override

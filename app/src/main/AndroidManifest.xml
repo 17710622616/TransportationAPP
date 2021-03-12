@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.youcoupon.john_li.transportationapp">
 
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -7,7 +8,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!--高德地图定位-->
     <!--用于进行网络定位-->
@@ -56,6 +57,7 @@
         <activity android:name=".TMSActivity.ClockInCustomerDetialActivity" android:screenOrientation="portrait"/>
         <activity android:name=".TMSActivity.ChooseTrainNumActivity" android:screenOrientation="portrait"/>
         <activity android:name=".TMSActivity.CarSplitActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".TMSActivity.CarSplitActivity1" android:screenOrientation="portrait"/>
         <activity android:name=".TMSActivity.CarSplitInvoiceDetialActiviy" android:screenOrientation="landscape"/>
         <activity android:name=".TMSActivity.TrainsAnalysisActivity" android:screenOrientation="portrait"/>
 

@@ -401,7 +401,7 @@ public class LoginActivity extends BaseActivity {
             public void onSuccess(String result) {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
-                    String json = TMSCommonUtils.decode(commonModel.getData());
+                    String json = TMSCommonUtils.decode(commonModel.getData().toString());
                     UserModel model = new Gson().fromJson(json, UserModel.class);
                     boolean b = false;
                     String loginMsg = String.valueOf(SpuUtils.get(LoginActivity.this, "loginMsg", ""));

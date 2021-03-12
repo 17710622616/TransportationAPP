@@ -126,9 +126,9 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         mDeliverGoodsAdapter = new DeliverGoodsAdapter(this, mDeliverInvoiceModelList);
         mLv.setAdapter(mDeliverGoodsAdapter);
 
-        ScanHelper.setScanSwitchLeft(DeliverGoodsActivity.this, true);
-        ScanHelper.setScanSwitchRight(DeliverGoodsActivity.this, true);
-        ScanHelper.setBarcodeReceiveModel(DeliverGoodsActivity.this, 2);
+        //ScanHelper.setScanSwitchLeft(DeliverGoodsActivity.this, true);
+        //ScanHelper.setScanSwitchRight(DeliverGoodsActivity.this, true);
+        //ScanHelper.setBarcodeReceiveModel(DeliverGoodsActivity.this, 2);
     }
 
     @Override
@@ -228,8 +228,6 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 break;
             case R.id.head_right_tv:
                 dialog = new ProgressDialog(this);
-
-
                 dialog.setTitle("提示");
                 dialog.setMessage("正在提交發票......");
                 dialog.setCancelable(false);
@@ -419,6 +417,9 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             }
 
             header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getDriverID());
+            header.setTruckNo(TMSCommonUtils.searchTrainsInfoMaxTimes());
+            header.setDriverID(TMSCommonUtils.getUserFor40(this).getDriverID());
+            header.setTruckID(TMSCommonUtils.getUserFor40(this).getTruckID());
             postInvoiceModel.setHeader(header);
             // 发票表体
             List<PostInvoiceModel.Line> lineList = new ArrayList<>();
@@ -445,10 +446,11 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         params.setConnectTimeout(10 * 1000);
         x.http().post(params, new Callback.CommonCallback<String>() {
             @Override
+
             public void onSuccess(String result) {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
-                    String orderNo = TMSCommonUtils.decode(commonModel.getData());
+                    String orderNo = TMSCommonUtils.decode(commonModel.getData().toString());
 
                     invoiceResult = invoiceResult - 1;
                     if (type == 0) {
@@ -483,7 +485,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         }
                     }
                 } else {
-                    String data = TMSCommonUtils.decode(commonModel.getData());
+                    String data = TMSCommonUtils.decode(commonModel.getData().toString());
                     if (type == 0) {
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 2));
@@ -565,6 +567,13 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         public void onReceive(Context context, Intent intent) {
             if(intent.getAction().equals(BARCODE_ACTION)) {
                 String str = intent.getStringExtra("BARCODE");
+                try {
+                    //str = str.substring(str.length() - 8, str.length());
+                    str = str.replaceAll("[a-zA-Z]","");
+                    if (str.length() > 7) {
+                        str = str.substring(0, str.length() - 1);
+                    }
+                } catch (Exception e) {}
                 if (!"".equals(str)) {
                     Barcodemode code = new Barcodemode();
                     code.setBarcode(str);
@@ -629,7 +638,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
     private void IshavaInvoiceCode(Barcodemode code) {
         //添加查询条件进行查询
         try {
-            List<InvoiceInfo> all = TMSApplication.db.selector(InvoiceInfo.class).where("invoice_no","=", code.getBarcode().substring(0, code.getBarcode().length() - 1)).findAll();
+            List<InvoiceInfo> all = TMSApplication.db.selector(InvoiceInfo.class).where("invoice_no","=", code.getBarcode()).findAll();
             InvoiceInfo invoiceInfo = null;
             if (all != null) {
                 for(InvoiceInfo info : all){
@@ -638,6 +647,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             }
 
             if (invoiceInfo != null) {
+                TMSCommonUtils.checkHasDone(invoiceInfo.getCustomerID(), this);
+
                 invoiceLL.setVisibility(View.VISIBLE);
                 scanInvoiceTv.setText(invoiceInfo.getInvoiceNo());
                 CustomerInfo customerInfo = null;

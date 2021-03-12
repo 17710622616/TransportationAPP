@@ -123,7 +123,9 @@ public class SubmitFailIntentService extends IntentService
                 header.setReference(TMSShareInfo.IMEI + time);
             }
         }
-        header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getSalesmanID());
+        header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getDriverID());
+        header.setDriverID(TMSCommonUtils.getUserFor40(this).getDriverID());
+        header.setTruckID(TMSCommonUtils.getUserFor40(this).getTruckID());
         postInvoiceModel.setHeader(header);
         List<PostInvoiceModel.Line> lineList = new ArrayList<>();
         for (DeliverInvoiceModel deliverInvoiceModel : mDeliverInvoiceModelList) {
@@ -157,7 +159,7 @@ public class SubmitFailIntentService extends IntentService
             public void onSuccess(String result) {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
-                    String orderNo = TMSCommonUtils.decode(commonModel.getData());
+                    String orderNo = TMSCommonUtils.decode(commonModel.getData().toString());
 
                     invoiceResult = invoiceResult - 1;
                     if (type == 0) {
@@ -188,7 +190,7 @@ public class SubmitFailIntentService extends IntentService
                         }
                     }
                 } else {
-                    String data = TMSCommonUtils.decode(commonModel.getData());
+                    String data = TMSCommonUtils.decode(commonModel.getData().toString());
                     if (type == 0) {
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 2));

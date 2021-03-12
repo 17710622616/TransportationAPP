@@ -49,6 +49,7 @@ import com.youcoupon.john_li.transportationapp.TMSUtils.GpsUtils;
 import com.youcoupon.john_li.transportationapp.TMSService.PostPhotoService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSBussinessUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSConfigor;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
@@ -67,10 +68,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import hardware.print.printer;
 
 /**
+ *
  * 主界面
  */
 public class MainActivity extends BaseActivity {
@@ -78,7 +81,7 @@ public class MainActivity extends BaseActivity {
     TextView textView;
     private GridView menuGv;
     private TMSHeadView headView;
-
+    private MainAdapter mAdapter;
     private List<String> menuList;
     private List<UserModel> mUserModelList;
     private ProgressDialog mLoadDialog;
@@ -100,7 +103,12 @@ public class MainActivity extends BaseActivity {
                         if (mLoadDialog != null) {
                             if (mLoadDialog.isShowing()) {
                                 mLoadDialog.dismiss();
+                                mAdapter.notifyDataSetChanged();
                             }
+                        }
+
+                        if (mAdapter != null) {
+                            mAdapter.notifyDataSetChanged();
                         }
                     }
                     break;
@@ -109,6 +117,10 @@ public class MainActivity extends BaseActivity {
                         if (mLoadDialog.isShowing()) {
                             mLoadDialog.dismiss();
                         }
+                    }
+
+                    if (mAdapter != null) {
+                        mAdapter.notifyDataSetChanged();
                     }
                     break;
             }
@@ -371,7 +383,8 @@ public class MainActivity extends BaseActivity {
 
         menuList = new ArrayList<>();
         initMenu();
-        menuGv.setAdapter(new MainAdapter(this, menuList));
+        mAdapter = new MainAdapter(this, menuList);
+        menuGv.setAdapter(mAdapter);
         textView.setText("用戶名：" + TMSShareInfo.mUserModelList.get(0).getID() + "   中文名：" + TMSShareInfo.mUserModelList.get(0).getNameChinese());
     }
 
@@ -431,7 +444,7 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        List<CustomerInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<CustomerInfo>>() {}.getType());
+                        List<CustomerInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData().toString()), new TypeToken<List<CustomerInfo>>() {}.getType());
                         //用集合向child_info表中插入多条数据
                         //db.save()方法不仅可以插入单个对象，还能插入集合
                         TMSApplication.db.save(list);
@@ -484,7 +497,7 @@ public class MainActivity extends BaseActivity {
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
         paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
-        paramsMap.put("salesmanid", TMSCommonUtils.getUserFor40(this).getSalesmanID());
+        paramsMap.put("salesmanid", TMSCommonUtils.getUserFor40(this).getDriverID());
         paramsMap.put("truckID", TMSCommonUtils.getUserFor40(this).getTruckID());
         RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_TODAY_INVOICE_LIST + TMSCommonUtils.createLinkStringByGet(paramsMap));
         params.setConnectTimeout(30 * 1000);
@@ -495,7 +508,7 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        String invoiceJson = TMSCommonUtils.decode(commonModel.getData());
+                        String invoiceJson = TMSCommonUtils.decode(commonModel.getData().toString());
                         List<InvoiceViewModel> list = new Gson().fromJson(invoiceJson, new TypeToken<List<InvoiceViewModel>>() {}.getType());
                         //ViewModel转Model
                         List<InvoiceInfo> infos = new ArrayList<>();
@@ -568,7 +581,7 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        String matrialJson = TMSCommonUtils.decode(commonModel.getData());
+                        String matrialJson = TMSCommonUtils.decode(commonModel.getData().toString());
                         List<MaterialNumberInfo> list = new Gson().fromJson(matrialJson, new TypeToken<List<MaterialNumberInfo>>() {}.getType());
 
                         // 當就資料中存在就直接寫入新資料列表中，保證更新時不會剔除原來的數量
@@ -651,7 +664,7 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        List<MaterialCorrespondenceModel> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<MaterialCorrespondenceModel>>() {}.getType());
+                        List<MaterialCorrespondenceModel> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData().toString()), new TypeToken<List<MaterialCorrespondenceModel>>() {}.getType());
                         //Model轉ViewModel
                         List<MaterialCorrespondenceInfo> infoList = new ArrayList<>();
                         for (MaterialCorrespondenceModel model : list) {
@@ -728,7 +741,7 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        List<ClockInOrderStatusInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<ClockInOrderStatusInfo>>() {}.getType());
+                        List<ClockInOrderStatusInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData().toString()), new TypeToken<List<ClockInOrderStatusInfo>>() {}.getType());
                         //清空路线表
                         TMSApplication.db.delete(ClockInOrderStatusInfo.class);
                         //用集合向child_info表中插入多条数据
@@ -793,7 +806,7 @@ public class MainActivity extends BaseActivity {
                 CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     try {
-                        List<ClockInCustomerInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData()), new TypeToken<List<ClockInCustomerInfo>>() {}.getType());
+                        List<ClockInCustomerInfo> list = new Gson().fromJson(TMSCommonUtils.decode(commonModel.getData().toString()), new TypeToken<List<ClockInCustomerInfo>>() {}.getType());
                         //用集合向child_info表中插入多条数据
                         //db.save()方法不仅可以插入单个对象，还能插入集合
                         TMSApplication.db.save(list);
@@ -1348,10 +1361,17 @@ public class MainActivity extends BaseActivity {
         mLoadDialog.show();
         try {
             // 獲取車次
-            long trunkNumber = 1;
-            TrainsInfo refundfirst = TMSApplication.db.findFirst(TrainsInfo.class);
-            if (refundfirst != null) {
-                trunkNumber = TMSCommonUtils.searchTrainsInfoMaxTimes() + 1;
+            Thread t = new Thread() {
+                @Override
+                public void run() {
+                    TMSBussinessUtils.asyncLastTrunkNo(MainActivity.this,this);
+                }
+            };
+            t.run();
+            t.join();
+            long trunkNumber = TMSCommonUtils.searchTrainsInfoMaxTimes();
+            if (trunkNumber == 0) {
+                trunkNumber = 1;
             }
 
             Map<String, String> paramsMap = new HashMap<>();
@@ -1367,7 +1387,7 @@ public class MainActivity extends BaseActivity {
                 public void onSuccess(String result) {
                     CommonModel commonModel = new Gson().fromJson(result, CommonModel.class);
                     if (commonModel.getCode() == 0) {
-                        String invoiceJson = TMSCommonUtils.decode(commonModel.getData());
+                        String invoiceJson = TMSCommonUtils.decode(commonModel.getData().toString());
                         List<InvoiceThisVhiclePullModel> list = new Gson().fromJson(invoiceJson, new TypeToken<List<InvoiceThisVhiclePullModel>>() {}.getType());
                         if (list.size() > 0) {
                             List<SubmitInvoiceInfo> all = null;
@@ -1377,7 +1397,7 @@ public class MainActivity extends BaseActivity {
                                     all = new ArrayList<>();
                                 }
                             } catch (DbException e) {
-
+                                e.printStackTrace();
                             }
 
                             for (InvoiceThisVhiclePullModel pullInvoiceModel : list) {
@@ -1467,8 +1487,9 @@ public class MainActivity extends BaseActivity {
                     mLoadDialog.dismiss();
                 }
             });
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            mLoadDialog.dismiss();
             Toast.makeText(this, "未獲取到車次，請重試或聯繫技術人員！" + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
@@ -1494,7 +1515,7 @@ public class MainActivity extends BaseActivity {
                 final CommonModel commonModel = new  Gson().fromJson(result, CommonModel.class);
                 if (commonModel.getCode() == 0) {
                     // 判斷目前倉庫日結方式拉取發票
-                    if (commonModel.getData().equals("2")) {
+                    if (commonModel.getData().toString().equals("2")) {
                         dismissDialog();
                         // 按照出倉日期方式则拉取一个月前到目前的發票
                         callNetPushSplitInvoices(TMSCommonUtils.getLastMonthDate(), TMSCommonUtils.getTomorrowDate());
@@ -1603,7 +1624,7 @@ public class MainActivity extends BaseActivity {
             public void onSuccess(String result) {
                 CommonModel model = new Gson().fromJson(result, CommonModel.class);
                 if (model.getCode() == 0) {
-                    String invoiceJson = TMSCommonUtils.decode(model.getData());
+                    String invoiceJson = TMSCommonUtils.decode(model.getData().toString());
                     Intent intent1 = new Intent(MainActivity.this, ChooseTrainNumActivity.class);
                     intent1.putExtra("InvoiceList", invoiceJson);
                     startActivity(intent1);

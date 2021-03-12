@@ -19,6 +19,7 @@ public class CarSplitInvoiceInfo {
     private Boolean operation;
     //@SmartColumn(id =7,name = "区域")
     private String district;
+    private boolean isChecked;
 
     public String getDistrict() {
         return district;
@@ -74,5 +75,13 @@ public class CarSplitInvoiceInfo {
 
     public void setCustomerAddress(String customerAddress) {
         CustomerAddress = customerAddress;
+    }
+
+    public boolean isChecked() {
+        return isChecked;
+    }
+
+    public void setChecked(boolean checked) {
+        isChecked = checked;
     }
 }

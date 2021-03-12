@@ -5,19 +5,16 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
@@ -25,11 +22,13 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bin.david.form.core.SmartTable;
 import com.bin.david.form.data.column.Column;
-import com.bin.david.form.data.format.bg.IBackgroundFormat;
 import com.bin.david.form.data.format.draw.ImageResDrawFormat;
 import com.bin.david.form.data.style.FontStyle;
 import com.bin.david.form.data.table.TableData;
@@ -37,7 +36,7 @@ import com.bin.david.form.listener.OnColumnItemClickListener;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.youcoupon.john_li.transportationapp.R;
-import com.youcoupon.john_li.transportationapp.TMSDBInfo.CarSplitInvoiceDetialInfo;
+import com.youcoupon.john_li.transportationapp.TMSAdapter.CarSpliteTableAdapter;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CarSplitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CarSplitInvoiceVM;
 import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
@@ -52,14 +51,14 @@ import org.xutils.common.Callback;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CarSplitActivity extends BaseActivity implements View.OnClickListener {
+public class CarSplitActivity1 extends  BaseActivity implements View.OnClickListener, CarSpliteTableAdapter.CheckItemListener, CarSpliteTableAdapter.InfoClickListener {
     private TMSHeadView headView;
+    private RecyclerView rv;
     private RadioGroup trainsRg;
     private RadioButton notRb, firstRb, secondRb, thridRb, fourthRb, fifthRb, noArrangeRb;
     private TextView goodsQtyTv, customerQtyTv, cannedTv, plasticTv, paperTv, bottleTv ,moveTv;
@@ -67,61 +66,51 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
     private ImageView unfoldIv;
     private RelativeLayout analysisRl;
     private ScrollView sv;
-    private SmartTable<CarSplitInvoiceInfo> tableView;
     private ProgressDialog mLoadDialog;
     private InterraptorLinnearView mLoadingLL;
     // tableView數據
     private List<CarSplitInvoiceInfo> tableList;
+    private CarSpliteTableAdapter mCarSpliteTableAdapter;
     // 實際數據
     private List<CarSplitInvoiceVM> carSplitInvoiceVMList;
-    private Column<Boolean> column;
-    private Column<String> columnNo;
-    private Column<String> columnType;
-    private Column<String> columnQty;
-    private Column<String> columnCName;
-    private Column<String> columnCAdd;
-    private Column<String> columnArea;
     private String mInvoiceListJson;
+    //选中后的数据
+    private List<CarSplitInvoiceInfo> checkedList;
 
     private String trains = "NOT_DIVIDED";
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState){
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_car_split);
-        try {
-            initView();
-            setListener();
-            initData();
-        } catch (Exception e) {
-            doCheckOut();
-            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "分车全局异常：\n" + e.getMessage(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor.txt");
-        }
+        setContentView(R.layout.activity_car_split1);
+        initView();
+        setListener();
+        initData();
     }
 
     @Override
     public void initView() {
-        headView = findViewById(R.id.car_split_head_view);
-        tableView = findViewById(R.id.car_split_table);
-        trainsRg = findViewById(R.id.car_split_rb);
-        notRb = findViewById(R.id.car_split_not_divided);
-        firstRb = findViewById(R.id.car_split_first);
-        secondRb = findViewById(R.id.car_split_second);
-        thridRb = findViewById(R.id.car_split_thrid);
-        fourthRb = findViewById(R.id.car_split_fourth);
-        fifthRb = findViewById(R.id.car_split_fifth);
-        noArrangeRb = findViewById(R.id.car_split_not_arrange);
-        goodsQtyTv = findViewById(R.id.car_split_goods_qty);
-        customerQtyTv = findViewById(R.id.car_split_customer_qty);
-        cannedTv = findViewById(R.id.car_split_canned_qty);
-        plasticTv = findViewById(R.id.car_split_plastic_qty);
-        paperTv = findViewById(R.id.car_split_paper_qty);
-        bottleTv = findViewById(R.id.car_split_bottle_qty);
-        moveTv = findViewById(R.id.car_split_move);
-        sv = findViewById(R.id.car_split_sv);
-        shrinkLL = findViewById(R.id.car_split_arrow_ll);
-        unfoldIv = findViewById(R.id.car_split_unfold);
-        analysisRl = findViewById(R.id.car_split_analysis_rl);
-        mLoadingLL = findViewById(R.id.car_split_loading);
+        headView = findViewById(R.id.car_split1_head_view);
+        rv = findViewById(R.id.car_split1_rv);
+        trainsRg = findViewById(R.id.car_split1_rb);
+        notRb = findViewById(R.id.car_split1_not_divided);
+        firstRb = findViewById(R.id.car_split1_first);
+        secondRb = findViewById(R.id.car_split1_second);
+        thridRb = findViewById(R.id.car_split1_thrid);
+        fourthRb = findViewById(R.id.car_split1_fourth);
+        fifthRb = findViewById(R.id.car_split1_fifth);
+        noArrangeRb = findViewById(R.id.car_split1_not_arrange);
+        goodsQtyTv = findViewById(R.id.car_split1_goods_qty);
+        customerQtyTv = findViewById(R.id.car_split1_customer_qty);
+        cannedTv = findViewById(R.id.car_split1_canned_qty);
+        plasticTv = findViewById(R.id.car_split1_plastic_qty);
+        paperTv = findViewById(R.id.car_split1_paper_qty);
+        bottleTv = findViewById(R.id.car_split1_bottle_qty);
+        moveTv = findViewById(R.id.car_split1_move);
+        sv = findViewById(R.id.car_split1_sv);
+        shrinkLL = findViewById(R.id.car_split1_arrow_ll);
+        unfoldIv = findViewById(R.id.car_split1_unfold);
+        analysisRl = findViewById(R.id.car_split1_analysis_rl);
+        mLoadingLL = findViewById(R.id.car_split1_loading);
     }
 
     @Override
@@ -130,7 +119,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId) {
-                    case R.id.car_split_not_divided:
+                    case R.id.car_split1_not_divided:
                         /*if(!mLoadDialog.isShowing()) {
                             mLoadDialog.show();
                         }*/
@@ -138,7 +127,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                         trains = "NOT_DIVIDED";
                         refreshTable();
                         break;
-                    case R.id.car_split_first:
+                    case R.id.car_split1_first:
                         /*if(!mLoadDialog.isShowing()) {
                             mLoadDialog.show();
                         }*/
@@ -146,7 +135,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                         trains = "FIRST";
                         refreshTable();
                         break;
-                    case R.id.car_split_second:
+                    case R.id.car_split1_second:
                         /*if(!mLoadDialog.isShowing()) {
                             mLoadDialog.show();
                         }*/
@@ -154,14 +143,15 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                         trains = "SECOND";
                         refreshTable();
                         break;
-                    case R.id.car_split_thrid:
+                    case R.id.car_split1_thrid:
                         /*if(!mLoadDialog.isShowing()) {
                             mLoadDialog.show();
                         }*/
                         mLoadingLL.setVisibility(View.VISIBLE);
                         trains = "THIRD";
                         refreshTable();
-                    case R.id.car_split_fourth:
+                        break;
+                    case R.id.car_split1_fourth:
                         /*if(!mLoadDialog.isShowing()) {
                             mLoadDialog.show();
                         }*/
@@ -169,7 +159,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                         trains = "FOURTH";
                         refreshTable();
                         break;
-                    case R.id.car_split_fifth:
+                    case R.id.car_split1_fifth:
                         /*if(!mLoadDialog.isShowing()) {
                             mLoadDialog.show();
                         }*/
@@ -177,7 +167,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                         trains = "FIFTH";
                         refreshTable();
                         break;
-                    case R.id.car_split_not_arrange:
+                    case R.id.car_split1_not_arrange:
                         /*if(!mLoadDialog.isShowing()) {
                             mLoadDialog.show();
                         }*/
@@ -203,7 +193,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
     public void initData() {
         mInvoiceListJson = getIntent().getStringExtra("InvoiceList");
         carSplitInvoiceVMList = new Gson().fromJson(mInvoiceListJson, new TypeToken<List<CarSplitInvoiceVM>>() {}.getType());
-        Toast.makeText(CarSplitActivity.this, "" + carSplitInvoiceVMList.size(), Toast.LENGTH_LONG).show();
+        Toast.makeText(CarSplitActivity1.this, "" + carSplitInvoiceVMList.size(), Toast.LENGTH_LONG).show();
         trains = getIntent().getStringExtra("Trains");
         if(trains == null){
             trains = "NOT_DIVIDED";
@@ -213,189 +203,52 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
         headView.setLeft(this);
         headView.setRightText("提交", this);
 
-        /*mLoadDialog = new ProgressDialog(CarSplitActivity.this);
-        mLoadDialog.setTitle("提示");
-        mLoadDialog.setMessage("正在刷新資料......");
-        mLoadDialog.setCancelable(false);*/
-
         tableList = new ArrayList<>();
-
-        //首次准备数据
-        //transToViewFirst();
-
-        // 初始化tableview参数
-        column = new Column<Boolean>(" ", "operation", new ImageResDrawFormat<Boolean>(45,45) {
-            @Override
-            protected Context getContext() {
-                return CarSplitActivity.this;
-            }
-
-            @Override
-            protected int getResourceID(Boolean aBoolean, String value, int position) {
-                if(aBoolean){
-                    return R.mipmap.check;      //将图标提前放入 app/res/mipmap 目录下
-                }
-                return R.mipmap.unselect_check;
-            }
-        });
-        //column.setComputeWidth(15);
-        column.setFixed(true);
-        column.setOnColumnItemClickListener(new OnColumnItemClickListener<Boolean>() {
-            @Override
-            public void onClick(Column<Boolean> column, String value, Boolean bool, int position) {
-                // Toast.makeText(CodeListActivity.this,"点击了"+value,Toast.LENGTH_SHORT).show();
-                if(column.getDatas().get(position)){
-                    //showName(position, false);
-                    column.getDatas().set(position,false);
-                    tableList.get(position).setOperation(false);
-                }else{
-                    //showName(position, true);
-                    column.getDatas().set(position,true);
-                    tableList.get(position).setOperation(true);
-                }
-                tableView.refreshDrawableState();
-                tableView.invalidate();
-            }
-        });
-
-        columnNo = new Column<>("號碼", "invoiceNo");
-        columnNo.setOnColumnItemClickListener(new OnColumnItemClickListener<String>() {
-            @Override
-            public void onClick(Column<String> column, String value, String s, int position) {
-                //tableItemClick(column,value,s,position);
-            }
-        });
-        columnNo.setTextAlign(Paint.Align.LEFT);
-        columnNo.setWidth(100);
-
-        columnType = new Column<>("類型", "invoiceType");
-        columnType.setOnColumnItemClickListener(new OnColumnItemClickListener<String>() {
-            @Override
-            public void onClick(Column<String> column, String value, String s, int position) {
-                //tableItemClick(column,value,s,position);
-            }
-        });
-        columnQty = new Column<>("數量", "qty");
-        columnQty.setOnColumnItemClickListener(new OnColumnItemClickListener<String>() {
-            @Override
-            public void onClick(Column<String> column, String value, String s, int position) {
-                tableItemClick(column,value,s,position);
-            }
-        });
-        columnCName = new Column<>("客戶名", "CustomerName");
-        columnCName.setOnColumnItemClickListener(new OnColumnItemClickListener<String>() {
-            @Override
-            public void onClick(Column<String> column, String value, String s, int position) {
-                tableItemClick(column,value,s,position);
-            }
-        });
-        columnCName.setTextAlign(Paint.Align.LEFT);
-        columnCName.setWidth(200);
-
-        columnCAdd = new Column<>("地址", "CustomerAddress");
-        columnCAdd.setOnColumnItemClickListener(new OnColumnItemClickListener<String>() {
-            @Override
-            public void onClick(Column<String> column, String value, String s, int position) {
-                tableItemClick(column,value,s,position);
-            }
-        });
-        columnCAdd.setTextAlign(Paint.Align.LEFT);
-        columnCAdd.setWidth(300);
-
-        columnArea = new Column<>("區域", "district");
-        columnArea.setOnColumnItemClickListener(new OnColumnItemClickListener<String>() {
-            @Override
-            public void onClick(Column<String> column, String value, String s, int position) {
-                tableItemClick(column,value,s,position);
-            }
-        });
-        columnArea.setWidth(50);
-        columnArea.setComputeWidth(50);
-
-        TableData<CarSplitInvoiceInfo> tableData = new TableData<>("表格名",tableList,column,columnNo,columnCName,columnArea,columnCAdd,columnQty,columnType);
-        // 是否顯示標題
-        tableView.getConfig().setShowTableTitle(false);
-        //tableView.setZoom(true,0,2);//缩放
-        tableView.getConfig().setFixedYSequence(false);//Y序号列
-        tableView.getConfig().setFixedXSequence(false);//X序号列
-        tableView.getConfig().setFixedCountRow(false);//列标题
-        tableView.getConfig().setShowXSequence(false);
-        tableView.getConfig().setShowYSequence(false);
-        tableView.getConfig().setColumnTitleStyle(new FontStyle(30, R.color.colorMineYellow));   //设置表格标题字体样式
-        tableView.getConfig().setContentStyle(new FontStyle().setTextSize(30));       //设置表格主题字体样式
-        tableView.getConfig().setHorizontalPadding(5);
-        tableView.getConfig().setLeftAndTopBackgroundColor(R.color.colorSkyBlue);
-        tableView.getConfig().setFixedTitle(true);
-        tableView.setTableData(tableData);// 填充
-        //tableView.setData(tableList);
-        //tableView.notifyDataChanged();
+        checkedList = new ArrayList<>();
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        mCarSpliteTableAdapter = new CarSpliteTableAdapter(this, tableList, this, this);
+        rv.setAdapter(mCarSpliteTableAdapter);;
 
         // 加載初始車次
         switch (trains) {
             case "NOT_DIVIDED":
-                //trainsRg.check(notRb.getId());
                 notRb.setChecked(true);
                 break;
             case "FIRST":
-                //trainsRg.check(firstRb.getId());
                 firstRb.setChecked(true);
                 break;
             case "SECOND":
-                //trainsRg.check(secondRb.getId());
                 secondRb.setChecked(true);
                 break;
             case "THIRD":
-                //trainsRg.check(thridRb.getId());
                 thridRb.setChecked(true);
                 break;
             case "FOURTH":
-                //trainsRg.check(fourthRb.getId());
                 fourthRb.setChecked(true);
                 break;
             case "FIFTH":
-                //trainsRg.check(fifthRb.getId());
                 fifthRb.setChecked(true);
                 break;
             case "NOT_ARRANGE":
-                //trainsRg.check(noArrangeRb.getId());
                 noArrangeRb.setChecked(true);
                 break;
         }
     }
 
-    /**
-     *
-     */
-    private void transToPackge() {
-        /*for(CarSplitInvoiceVM vm : carSplitInvoiceVMList) {
-            vm
-        }*/
-    }
-
     private void refreshTable() {
-        if (null != tableView.getTableData()) {
-            tableView.getTableData().getT().clear();
+        if (null != tableList) {
+            tableList.clear();
         }
 
         List<CarSplitInvoiceInfo> newList = transToView();
-        tableView.addData(newList, true);// 填充 
-        Log.d("Transportation", trains + ",添加新表," + newList.size());
+        tableList.addAll(newList);// 填充
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                tableView.notifyDataChanged();
-                Log.d("Transportation", "视图内容相当于视图起始坐标的偏移量," + tableView.getScaleY()+"，偏移量："+tableView.getY()+"，高度："+tableView.getHeight());
-                //tableView.scrollBy(0,-1 * tableView.getHeight());
-                //tableView.invalidate();
-
-                /*if (mLoadDialog != null) {
-                    if (mLoadDialog.isShowing()) {
-                        mLoadDialog.dismiss();
-                    }
-                }*/
+                mCarSpliteTableAdapter.notifyDataSetChanged();
                 mLoadingLL.setVisibility(View.GONE);
             }
-        }, 3 * 1000);
+        }, 1 * 1000);
     }
 
     /**
@@ -510,34 +363,6 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
         return newtableList;
     }
 
-    /**
-     * 表格內容點擊，打開彈窗
-     * @param column
-     * @param value
-     * @param s
-     * @param position
-     */
-    private void tableItemClick(Column<String> column, String value, Object s, int position) {
-        Intent intent = new Intent(CarSplitActivity.this, CarSplitInvoiceDetialActiviy.class);
-        CarSplitInvoiceVM vm = getInvoiceData(tableList.get(position).getInvoiceNo());
-        if (vm != null) {
-            intent.putExtra("InvoiceData", new Gson().toJson(vm));
-            startActivity(intent);
-        } else {
-            Toast.makeText(CarSplitActivity.this, "查看訂單詳情失敗！", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private CarSplitInvoiceVM getInvoiceData(String invoiceNo) {
-        for (CarSplitInvoiceVM model : carSplitInvoiceVMList) {
-            if (String.valueOf(model.getHeader().getInvoiceNo()).equals(invoiceNo)) {
-                return model;
-            }
-        }
-
-        return null;
-    }
-
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -549,57 +374,57 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                 // 確認提交，並釋放登錄狀態
                 submitCarSplit();
                 break;
-            case R.id.car_split_arrow_ll:
+            case R.id.car_split1_arrow_ll:
                 analysisRl.setVisibility(View.GONE);
                 unfoldIv.setVisibility(View.VISIBLE);
                 break;
-            case R.id.car_split_unfold:
+            case R.id.car_split1_unfold:
                 analysisRl.setVisibility(View.VISIBLE);
                 unfoldIv.setVisibility(View.GONE);
                 break;
-            case R.id.car_split_goods_qty:
-                Intent intent1 = new Intent(CarSplitActivity.this, TrainsAnalysisActivity.class);
+            case R.id.car_split1_goods_qty:
+                Intent intent1 = new Intent(CarSplitActivity1.this, TrainsAnalysisActivity.class);
                 intent1.putExtra("START_WAY", "GOODS");
                 intent1.putExtra("Trains", trains);
                 intent1.putExtra("InvoiceList", new Gson().toJson(carSplitInvoiceVMList));
                 startActivity(intent1);
                 break;
-            case R.id.car_split_customer_qty:
-                Intent intent2 = new Intent(CarSplitActivity.this, TrainsAnalysisActivity.class);
+            case R.id.car_split1_customer_qty:
+                Intent intent2 = new Intent(CarSplitActivity1.this, TrainsAnalysisActivity.class);
                 intent2.putExtra("START_WAY", "CUSTOMER");
                 intent2.putExtra("Trains", trains);
                 intent2.putExtra("InvoiceList", new Gson().toJson(carSplitInvoiceVMList));
                 startActivity(intent2);
                 break;
-            case R.id.car_split_canned_qty:
-                Intent intent3 = new Intent(CarSplitActivity.this, TrainsAnalysisActivity.class);
+            case R.id.car_split1_canned_qty:
+                Intent intent3 = new Intent(CarSplitActivity1.this, TrainsAnalysisActivity.class);
                 intent3.putExtra("START_WAY", "CANNED");
                 intent3.putExtra("Trains", trains);
                 intent3.putExtra("InvoiceList", new Gson().toJson(carSplitInvoiceVMList));
                 startActivity(intent3);
                 break;
-            case R.id.car_split_plastic_qty:
-                Intent intent4 = new Intent(CarSplitActivity.this, TrainsAnalysisActivity.class);
+            case R.id.car_split1_plastic_qty:
+                Intent intent4 = new Intent(CarSplitActivity1.this, TrainsAnalysisActivity.class);
                 intent4.putExtra("START_WAY", "PLASTIC");
                 intent4.putExtra("Trains", trains);
                 intent4.putExtra("InvoiceList", new Gson().toJson(carSplitInvoiceVMList));
                 startActivity(intent4);
                 break;
-            case R.id.car_split_paper_qty:
-                Intent intent5 = new Intent(CarSplitActivity.this, TrainsAnalysisActivity.class);
+            case R.id.car_split1_paper_qty:
+                Intent intent5 = new Intent(CarSplitActivity1.this, TrainsAnalysisActivity.class);
                 intent5.putExtra("START_WAY", "PAPER");
                 intent5.putExtra("Trains", trains);
                 intent5.putExtra("InvoiceList", new Gson().toJson(carSplitInvoiceVMList));
                 startActivity(intent5);
                 break;
-            case R.id.car_split_bottle_qty:
-                Intent intent6 = new Intent(CarSplitActivity.this, TrainsAnalysisActivity.class);
+            case R.id.car_split1_bottle_qty:
+                Intent intent6 = new Intent(CarSplitActivity1.this, TrainsAnalysisActivity.class);
                 intent6.putExtra("START_WAY", "BOTTLE");
                 intent6.putExtra("Trains", trains);
                 intent6.putExtra("InvoiceList", new Gson().toJson(carSplitInvoiceVMList));
                 startActivity(intent6);
                 break;
-            case R.id.car_split_move:
+            case R.id.car_split1_move:
                 showMoveInvoiceToOtherTrains();
                 break;
         }
@@ -630,17 +455,17 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                 CommonModel model = new Gson().fromJson(result, CommonModel.class);
                 if (model.getCode() == 0) {
                     String str = TMSCommonUtils.decode(model.getData().toString());
-                    Toast.makeText(CarSplitActivity.this, "提交分車成功！" + String.valueOf(model.getMessage()), Toast.LENGTH_LONG).show();
+                    Toast.makeText(CarSplitActivity1.this, "提交分車成功！" + String.valueOf(model.getMessage()), Toast.LENGTH_LONG).show();
                     mLoadDialog.dismiss();
                     doCheckOut();
                 } else {
-                    Toast.makeText(CarSplitActivity.this, "提交分車失敗！" + String.valueOf(model.getMessage()), Toast.LENGTH_LONG).show();
+                    Toast.makeText(CarSplitActivity1.this, "提交分車失敗！" + String.valueOf(model.getMessage()), Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onError(Throwable ex, boolean isOnCallback) {
-                Toast.makeText(CarSplitActivity.this, "提交分車異常！", Toast.LENGTH_LONG).show();
+                Toast.makeText(CarSplitActivity1.this, "提交分車異常！", Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -658,218 +483,6 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
             }
         });
     }
-
-    /**
-     * 轉換model至提交
-     * @return
-     */
-    private List<PostTrunkSplitModel> transToPost() {
-        List<PostTrunkSplitModel> postList = new ArrayList<>();
-        for (CarSplitInvoiceVM carSplitInvoiceVM : carSplitInvoiceVMList) {
-            PostTrunkSplitModel model = new PostTrunkSplitModel();
-            model.setTruckNo(carSplitInvoiceVM.getHeader().getTruckNo());
-            model.setInvoiceNo(carSplitInvoiceVM.getHeader().getInvoiceNo());
-            postList.add(model);
-        }
-        return postList;
-    }
-
-    /**
-     * 點擊顯示移動車組彈窗
-     */
-    private void showMoveInvoiceToOtherTrains() {
-        AlertDialog.Builder dialog1 = new AlertDialog.Builder(CarSplitActivity.this);
-        LayoutInflater inflater = LayoutInflater.from(CarSplitActivity.this);
-        View view1 = inflater.inflate(R.layout.dialog_car_split_move_list, null);
-        dialog1.setView(view1);//设置使用View
-        //设置控件应该用v1.findViewById 否则出错
-        final TextView notDivided = view1.findViewById(R.id.dialog_not_divided);
-        TextView first = view1.findViewById(R.id.dialog_first);
-        TextView second = view1.findViewById(R.id.dialog_second);
-        TextView thrid = view1.findViewById(R.id.dialog_thrid);
-        final TextView fourth = view1.findViewById(R.id.dialog_fourth);
-        final TextView fifth = view1.findViewById(R.id.dialog_fifth);
-        final TextView notArrange = view1.findViewById(R.id.dialog_not_arrange);
-
-        final Dialog d = dialog1.create();
-        notDivided.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                d.dismiss();
-                moveInvoiceToOtherTrains(0);
-                Log.d("Transport", "打印移动0");
-            }
-        });
-        first.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                d.dismiss();
-                moveInvoiceToOtherTrains(1);
-                Log.d("Transport", "打印移动1");
-            }
-        });
-        second.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                d.dismiss();
-                moveInvoiceToOtherTrains(2);
-                Log.d("Transport", "打印移动2");
-            }
-        });
-        thrid.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                d.dismiss();
-                moveInvoiceToOtherTrains(3);
-                Log.d("Transport", "打印移动3");
-            }
-        });
-        fourth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                d.dismiss();
-                moveInvoiceToOtherTrains(4);
-                Log.d("Transport", "打印移动4");
-            }
-        });
-        fifth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                d.dismiss();
-                moveInvoiceToOtherTrains(5);
-                Log.d("Transport", "打印移动5");
-            }
-        });
-        notArrange.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                d.dismiss();
-                moveInvoiceToOtherTrains(255);
-                Log.d("Transport", "打印移动255");
-            }
-        });
-        d.show();
-    }
-
-    /**
-     * 移動時選擇移動至車組
-     */
-    private void moveInvoiceToOtherTrains(int moveTo) {
-        /*if(!mLoadDialog.isShowing()) {
-              mLoadDialog.show();
-        }*/
-        mLoadingLL.setVisibility(View.VISIBLE);
-        int trunkNo = 0;
-        switch (trains) {
-            case "NOT_DIVIDED":
-                trunkNo = 0;
-                break;
-            case "FIRST":
-                trunkNo = 1;
-                break;
-            case "SECOND":
-                trunkNo = 2;
-                break;
-            case "THIRD":
-                trunkNo = 3;
-                break;
-            case "FOURTH":
-                trunkNo = 4;
-                break;
-            case "FIFTH":
-                trunkNo = 5;
-                break;
-            case "NOT_ARRANGE":
-                trunkNo = 255;
-                break;
-        }
-
-        if (trunkNo == moveTo) {
-            // 不可移動到當前車次
-            Toast.makeText(CarSplitActivity.this, "不可移動至當前車次", Toast.LENGTH_LONG).show();
-            /*if (mLoadDialog != null) {
-                if (mLoadDialog.isShowing()) {
-                    mLoadDialog.dismiss();
-                }
-            }*/
-            mLoadingLL.setVisibility(View.GONE);
-        } else {
-            // 遍歷界面分車表，修改車次
-            for (CarSplitInvoiceInfo info : tableList) {
-                if (info.getOperation()) {
-                    CarSplitInvoiceVM cacheCarSplitInvoiceVM = new CarSplitInvoiceVM();
-                    CarSplitInvoiceVM.Header cacheHeader = new CarSplitInvoiceVM.Header();
-                    cacheHeader.setInvoiceNo(Long.parseLong(info.getInvoiceNo()));
-                    cacheCarSplitInvoiceVM.setHeader(cacheHeader);
-                    int index = carSplitInvoiceVMList.indexOf(cacheCarSplitInvoiceVM);
-                    carSplitInvoiceVMList.get(index).getHeader().setTruckNo(moveTo);
-                }
-            }
-
-            if (null != tableView.getTableData()) {
-                tableView.getTableData().getT().clear();
-            }
-
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    tableView.notifyDataChanged();
-                    Log.d("Transportation", "视图内容相当于视图起始坐标的偏移量," + tableView.getScaleY()+"，偏移量："+tableView.getY()+"，高度："+tableView.getHeight());
-                    //tableView.scrollBy(0,-1 * tableView.getHeight());
-                    //tableView.invalidate();
-
-                /*if (mLoadDialog != null) {
-                    if (mLoadDialog.isShowing()) {
-                        mLoadDialog.dismiss();
-                    }
-                }*/
-
-                    refreshTable();
-                    mLoadingLL.setVisibility(View.GONE);
-                }
-            }, 3 * 1000);
-
-            //trains = "NOT_DIVIDED";
-            //transToView();
-            /*if (mLoadDialog != null) {
-                if (mLoadDialog.isShowing()) {
-                    mLoadDialog.dismiss();
-                }
-            }*/
-            //mLoadingLL.setVisibility(View.GONE);
-            /*switch (trains) {
-                case "NOT_DIVIDED":
-                    //trainsRg.check(notRb.getId());
-                    notRb.setChecked(true);
-                    break;
-                case "FIRST":
-                    //trainsRg.check(firstRb.getId());
-                    firstRb.setChecked(true);
-                    break;
-                case "SECOND":
-                    //trainsRg.check(secondRb.getId());
-                    secondRb.setChecked(true);
-                    break;
-                case "THIRD":
-                    //trainsRg.check(thridRb.getId());
-                    thridRb.setChecked(true);
-                    break;
-                case "FOURTH":
-                    //trainsRg.check(fourthRb.getId());
-                    fourthRb.setChecked(true);
-                    break;
-                case "FIFTH":
-                    //trainsRg.check(fifthRb.getId());
-                    fifthRb.setChecked(true);
-                    break;
-                case "NOT_ARRANGE":
-                    //trainsRg.check(noArrangeRb.getId());
-                    noArrangeRb.setChecked(true);
-                    break;
-            }*/
-        }
-    }
-
     /**
      * 登出操作
      */
@@ -901,7 +514,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                             mLoadDialog.dismiss();
                         }
                     }
-                    Toast.makeText(CarSplitActivity.this,  String.valueOf(model.getMessage()) + "，退出操作失败，请重试！", Toast.LENGTH_LONG).show();
+                    Toast.makeText(CarSplitActivity1.this,  String.valueOf(model.getMessage()) + "，退出操作失败，请重试！", Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -912,7 +525,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
                         mLoadDialog.dismiss();
                     }
                 }
-                Toast.makeText(CarSplitActivity.this, "退出操作異常，请重试或聯繫IT人員！", Toast.LENGTH_LONG).show();
+                Toast.makeText(CarSplitActivity1.this, "退出操作異常，请重试或聯繫IT人員！", Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -931,9 +544,152 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
         });
     }
 
+    /**
+     * 點擊顯示移動車組彈窗
+     */
+    private void showMoveInvoiceToOtherTrains() {
+        AlertDialog.Builder dialog1 = new AlertDialog.Builder(CarSplitActivity1.this);
+        LayoutInflater inflater = LayoutInflater.from(CarSplitActivity1.this);
+        View view1 = inflater.inflate(R.layout.dialog_car_split_move_list, null);
+        dialog1.setView(view1);//设置使用View
+        //设置控件应该用v1.findViewById 否则出错
+        final TextView notDivided = view1.findViewById(R.id.dialog_not_divided);
+        TextView first = view1.findViewById(R.id.dialog_first);
+        TextView second = view1.findViewById(R.id.dialog_second);
+        TextView thrid = view1.findViewById(R.id.dialog_thrid);
+        final TextView fourth = view1.findViewById(R.id.dialog_fourth);
+        final TextView fifth = view1.findViewById(R.id.dialog_fifth);
+        final TextView notArrange = view1.findViewById(R.id.dialog_not_arrange);
+
+        final Dialog d = dialog1.create();
+        notDivided.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                d.dismiss();
+                moveInvoiceToOtherTrains(0);
+            }
+        });
+        first.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                d.dismiss();
+                moveInvoiceToOtherTrains(1);
+            }
+        });
+        second.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                d.dismiss();
+                moveInvoiceToOtherTrains(2);
+            }
+        });
+        thrid.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                d.dismiss();
+                moveInvoiceToOtherTrains(3);
+            }
+        });
+        fourth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                d.dismiss();
+                moveInvoiceToOtherTrains(4);
+            }
+        });
+        fifth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                d.dismiss();
+                moveInvoiceToOtherTrains(5);
+            }
+        });
+        notArrange.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                d.dismiss();
+                moveInvoiceToOtherTrains(255);
+            }
+        });
+        d.show();
+    }
+
+    /**
+     * 移動時選擇移動至車組
+     */
+    private void moveInvoiceToOtherTrains(int moveTo) {
+        mLoadingLL.setVisibility(View.VISIBLE);
+        int trunkNo = 0;
+        switch (trains) {
+            case "NOT_DIVIDED":
+                trunkNo = 0;
+                break;
+            case "FIRST":
+                trunkNo = 1;
+                break;
+            case "SECOND":
+                trunkNo = 2;
+                break;
+            case "THIRD":
+                trunkNo = 3;
+                break;
+            case "FOURTH":
+                trunkNo = 4;
+                break;
+            case "FIFTH":
+                trunkNo = 5;
+                break;
+            case "NOT_ARRANGE":
+                trunkNo = 255;
+                break;
+        }
+
+        if (trunkNo == moveTo) {
+            // 不可移動到當前車次
+            Toast.makeText(CarSplitActivity1.this, "不可移動至當前車次", Toast.LENGTH_LONG).show();
+            mLoadingLL.setVisibility(View.GONE);
+        } else {
+            // 遍歷界面分車表，修改車次
+            for (CarSplitInvoiceInfo info : tableList) {
+                if (info.isChecked()) {
+                    CarSplitInvoiceVM cacheCarSplitInvoiceVM = new CarSplitInvoiceVM();
+                    CarSplitInvoiceVM.Header cacheHeader = new CarSplitInvoiceVM.Header();
+                    cacheHeader.setInvoiceNo(Long.parseLong(info.getInvoiceNo()));
+                    cacheCarSplitInvoiceVM.setHeader(cacheHeader);
+                    int index = carSplitInvoiceVMList.indexOf(cacheCarSplitInvoiceVM);
+                    carSplitInvoiceVMList.get(index).getHeader().setTruckNo(moveTo);
+                }
+            }
+
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    refreshTable();
+                    mLoadingLL.setVisibility(View.GONE);
+                }
+            }, 1 * 1000);
+        }
+    }
+
+    /**
+     * 轉換model至提交
+     * @return
+     */
+    private List<PostTrunkSplitModel> transToPost() {
+        List<PostTrunkSplitModel> postList = new ArrayList<>();
+        for (CarSplitInvoiceVM carSplitInvoiceVM : carSplitInvoiceVMList) {
+            PostTrunkSplitModel model = new PostTrunkSplitModel();
+            model.setTruckNo(carSplitInvoiceVM.getHeader().getTruckNo());
+            model.setInvoiceNo(carSplitInvoiceVM.getHeader().getInvoiceNo());
+            postList.add(model);
+        }
+        return postList;
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK
+
                 && event.getAction() == KeyEvent.ACTION_DOWN) {
             return true;
         }
@@ -948,5 +704,49 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
             }
         }
         super.onDestroy();
+    }
+
+    @Override
+    public void itemChecked(CarSplitInvoiceInfo checkBean, boolean isChecked) {
+        //处理Item点击选中回调事件
+        if (isChecked) {
+            //选中处理
+            if (!checkedList.contains(checkBean)) {
+                checkedList.add(checkBean);
+            }
+        } else {
+            //未选中处理
+            if (checkedList.contains(checkBean)) {
+                checkedList.remove(checkBean);
+            }
+        }
+        //判断列表数据是否全部选中
+        /*if (tableList.size() == dataArray.size()) {
+            tableList.setChecked(true);
+        } else {
+            tableList.setChecked(false);
+        }*/
+    }
+
+    @Override
+    public void infoClick(int position) {
+        Intent intent = new Intent(CarSplitActivity1.this, CarSplitInvoiceDetialActiviy.class);
+        CarSplitInvoiceVM vm = getInvoiceData(tableList.get(position).getInvoiceNo());
+        if (vm != null) {
+            intent.putExtra("InvoiceData", new Gson().toJson(vm));
+            startActivity(intent);
+        } else {
+            Toast.makeText(CarSplitActivity1.this, "查看訂單詳情失敗！", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private CarSplitInvoiceVM getInvoiceData(String invoiceNo) {
+        for (CarSplitInvoiceVM model : carSplitInvoiceVMList) {
+            if (String.valueOf(model.getHeader().getInvoiceNo()).equals(invoiceNo)) {
+                return model;
+            }
+        }
+
+        return null;
     }
 }

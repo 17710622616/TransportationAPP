@@ -134,7 +134,11 @@ public class ToHtml {
             String result = "";
             TrainsInfo first = TMSApplication.db.findFirst(TrainsInfo.class);
             if (first != null) {
-                result = mHtmlHeada1 + String.valueOf(TMSCommonUtils.searchTrainsInfoMaxTimes() + 1) + mHtmlHeada2 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHeada3;
+                int times = TMSCommonUtils.searchTrainsInfoMaxTimes();
+                if (times == 0) {
+                    times = 1;
+                }
+                result = mHtmlHeada1 + times + mHtmlHeada2 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHeada3;
             } else {
                 result = mHtmlHeada1 + 1 + mHtmlHeada2 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHeada3;
             }

@@ -87,7 +87,7 @@ public class SubmitFailIntentStateService extends IntentService {
                     }
                 } else {
                     try {
-                        String data = TMSCommonUtils.decode(commonModel.getData());
+                        String data = TMSCommonUtils.decode(commonModel.getData().toString());
                         WhereBuilder b = WhereBuilder.b();
                         String billno = invoiceStateInfo.getBillNo();
                         b.and("bill_no","=", invoiceStateInfo.getBillNo()); //构造修改的条件

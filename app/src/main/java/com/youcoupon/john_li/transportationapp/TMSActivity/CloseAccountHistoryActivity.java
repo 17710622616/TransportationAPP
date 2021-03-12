@@ -40,6 +40,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
 
     private List<TrainsInfo> mList;
     private CloseAccountHistoryAdapter mCloseAccountHistoryAdapter;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +78,30 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
             mList.clear();
             List<TrainsInfo> cacheList = TMSApplication.db.findAll(TrainsInfo.class);
             if (cacheList != null) {
-                mList.addAll(cacheList);
+                int qty = 0;
+                for (TrainsInfo info : cacheList) {
+                    PostStockMovementModel depositBody = new Gson().fromJson(info.getTodayDepositBody(), PostStockMovementModel.class);
+                    if (depositBody != null) {
+                        if (depositBody.getLines() != null) {
+                            for (PostStockMovementModel.Line line : depositBody.getLines()) {
+                                qty += line.getQuantity();
+                            }
+                        }
+                        PostStockMovementModel refundBody = new Gson().fromJson(info.getTodayRefundBody(), PostStockMovementModel.class);
+                        if (refundBody.getLines() != null) {
+                            for (PostStockMovementModel.Line line : refundBody.getLines()) {
+                                qty += line.getQuantity();
+                            }
+                        }
+                    }
+
+                    if (qty > 0) {
+                        mList.add(info);
+                    }
+                    qty = 0;
+                }
+
+                //mList.addAll(cacheList);
             }
             mCloseAccountHistoryAdapter.notifyDataSetChanged();
         } catch (DbException e) {
@@ -98,22 +122,26 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                         if (trainsInfo.getTodayDepositStatus() != 1) {
                             PostStockMovementModel depositModel = new Gson().fromJson(trainsInfo.getTodayDepositBody(), PostStockMovementModel.class);
                             int qty = 0;
-                            for (PostStockMovementModel.Line lines : depositModel.getLines()) {
-                                qty += lines.getQuantity();
-                            }
-                            if (qty != 0) {
-                                callNetSubmitMaterialsAndSettlement(depositModel, true);
+                            if (depositModel != null) {
+                                for (PostStockMovementModel.Line lines : depositModel.getLines()) {
+                                    qty += lines.getQuantity();
+                                }
+                                if (qty != 0) {
+                                    callNetSubmitMaterialsAndSettlement(depositModel, true);
+                                }
                             }
                         }
 
                         if (trainsInfo.getTodayRefundStatus() != 1) {
                             PostStockMovementModel refundModel = new Gson().fromJson(trainsInfo.getTodayRefundBody(), PostStockMovementModel.class);
-                            int qty = 0;
-                            for (PostStockMovementModel.Line lines : refundModel.getLines()) {
-                                qty += lines.getQuantity();
-                            }
-                            if (qty != 0) {
-                                callNetSubmitMaterialsAndSettlement(refundModel, false);
+                            if (refundModel != null){
+                                int qty = 0;
+                                for (PostStockMovementModel.Line lines : refundModel.getLines()) {
+                                    qty += lines.getQuantity();
+                                }
+                                if (qty != 0) {
+                                    callNetSubmitMaterialsAndSettlement(refundModel, false);
+                                }
                             }
                         }
                     }
@@ -123,9 +151,10 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                 break;
         }
     }
-        /**
-         * 提交物料结算状态
-         */
+
+    /**
+     * 提交物料结算状态
+     */
     private void callNetSubmitMaterialsAndSettlement(final PostStockMovementModel movementModel, final boolean driverout) {
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
@@ -144,14 +173,14 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                 if (commonModel.getCode() == 0) {
                     try {
                         WhereBuilder b = WhereBuilder.b();
-                        b.and("trains_times","=",movementModel.getHeader().getTruckNo()); //构造修改的条件
+                        b.and("trains_times", "=", movementModel.getHeader().getTruckNo()); //构造修改的条件
                         KeyValue name = null;
                         if (driverout) {
                             name = new KeyValue("today_deposit_status", 1);
                         } else {
                             name = new KeyValue("today_refund_status", 1);
                         }
-                        TMSApplication.db.update(TrainsInfo.class,b,name);
+                        TMSApplication.db.update(TrainsInfo.class, b, name);
                         Toast.makeText(CloseAccountHistoryActivity.this, commonModel.getMessage() + ",提交結算成功！", Toast.LENGTH_SHORT).show();
                     } catch (DbException e) {
                         e.printStackTrace();
@@ -159,14 +188,14 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                 } else {
                     try {
                         WhereBuilder b = WhereBuilder.b();
-                        b.and("trains_times","=",movementModel.getHeader().getTruckNo()); //构造修改的条件
+                        b.and("trains_times", "=", movementModel.getHeader().getTruckNo()); //构造修改的条件
                         KeyValue name = null;
                         if (driverout) {
                             name = new KeyValue("today_deposit_status", 2);
                         } else {
                             name = new KeyValue("today_refund_status", 2);
                         }
-                        TMSApplication.db.update(TrainsInfo.class,b,name);
+                        TMSApplication.db.update(TrainsInfo.class, b, name);
                     } catch (DbException e) {
                         e.printStackTrace();
                     }
@@ -177,14 +206,14 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
             public void onError(Throwable ex, boolean isOnCallback) {
                 try {
                     WhereBuilder b = WhereBuilder.b();
-                    b.and("trains_times","=",movementModel.getHeader().getTruckNo()); //构造修改的条件
+                    b.and("trains_times", "=", movementModel.getHeader().getTruckNo()); //构造修改的条件
                     KeyValue name = null;
                     if (driverout) {
                         name = new KeyValue("today_deposit_status", 2);
                     } else {
                         name = new KeyValue("today_refund_status", 2);
                     }
-                    TMSApplication.db.update(TrainsInfo.class,b,name);
+                    TMSApplication.db.update(TrainsInfo.class, b, name);
                 } catch (DbException e) {
                     e.printStackTrace();
                 }

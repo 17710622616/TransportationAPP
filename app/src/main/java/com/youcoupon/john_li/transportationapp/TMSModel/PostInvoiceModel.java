@@ -41,6 +41,9 @@ public class PostInvoiceModel {
         private String SalesmanID;
         private String Reference;
         private String CustomerID;
+        private long TruckNo;
+        private String DriverID;
+        private String TruckID;
 
         public String getSalesmanID() {
             return SalesmanID;
@@ -64,6 +67,30 @@ public class PostInvoiceModel {
 
         public void setCustomerID(String CustomerID) {
             this.CustomerID = CustomerID;
+        }
+
+        public long getTruckNo() {
+            return TruckNo;
+        }
+
+        public void setTruckNo(long truckNo) {
+            TruckNo = truckNo;
+        }
+
+        public String getTruckID() {
+            return TruckID;
+        }
+
+        public void setTruckID(String truckID) {
+            TruckID = truckID;
+        }
+
+        public String getDriverID() {
+            return DriverID;
+        }
+
+        public void setDriverID(String driverID) {
+            DriverID = driverID;
         }
     }
 

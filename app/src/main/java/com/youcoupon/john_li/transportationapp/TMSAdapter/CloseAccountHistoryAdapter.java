@@ -67,13 +67,18 @@ public class CloseAccountHistoryAdapter extends BaseAdapter {
             PostStockMovementModel refundBody = new Gson().fromJson(list.get(i).getTodayRefundBody(), PostStockMovementModel.class);
             int deposit = 0;
             int refund = 0;
-            for (PostStockMovementModel.Line info : depositBody.getLines()) {
-                deposit += info.getQuantity();
+            if (depositBody != null) {
+                for (PostStockMovementModel.Line info : depositBody.getLines()) {
+                    deposit += info.getQuantity();
+                }
             }
 
-            for (PostStockMovementModel.Line info : refundBody.getLines()) {
-                refund += info.getQuantity();
+            if (refundBody != null) {
+                for (PostStockMovementModel.Line info : refundBody.getLines()) {
+                    refund += info.getQuantity();
+                }
             }
+
             holder.item_close_history_sendout.setText(String.valueOf(deposit));
             holder.item_close_history_recycle.setText(String.valueOf(refund));
             switch (list.get(i).getTodayDepositStatus()) {

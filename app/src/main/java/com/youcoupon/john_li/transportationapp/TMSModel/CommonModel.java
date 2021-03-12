@@ -1,5 +1,7 @@
 package com.youcoupon.john_li.transportationapp.TMSModel;
 
+import com.google.gson.JsonObject;
+
 /**
  * Created by John_Li on 26/11/2018.
  */

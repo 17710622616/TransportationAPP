@@ -55,7 +55,7 @@ public class CarSplitInvoiceDetialActiviy extends BaseActivity implements View.O
         mCarSplitInvoiceVM = new Gson().fromJson(getIntent().getStringExtra("InvoiceData"), CarSplitInvoiceVM.class);
 
         headView.setLeft(this);
-        headView.setTitle(mCarSplitInvoiceVM.getHeader().getInvoiceNo() + "發票詳情");
+        headView.setTitle(mCarSplitInvoiceVM.getHeader().getInvoiceNo() + "," + mCarSplitInvoiceVM.getHeader().getCustomerName() + ",發票詳情");
 
         Column<String> noColumn = new Column<>("編號", "merchandiseCode");
         Column<String> nameColumn = new Column<>("品名", "merchandiseName");

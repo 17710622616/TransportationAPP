@@ -43,7 +43,9 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.common.StringUtils;
+import com.youcoupon.john_li.transportationapp.TMSActivity.DeliverGoodsActivity;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CarSplitInvoiceDetialInfo;
+import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TimingPositionInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CarSplitInvoiceVM;
@@ -370,7 +372,7 @@ public class TMSCommonUtils {
                     times = info.getTrainsTimes();
                 }
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return times;
@@ -732,67 +734,6 @@ public class TMSCommonUtils {
     private static DownloadManager downloadManager;
 
     private static void downFile(String m_newApkUrl, final Context context) {
-        /*initProgressDialog(context);
-        // 開始下載
-        //设置请求参数
-        Map<String, String> paramsMap = new HashMap<>();
-        paramsMap.put("apkname", "PSAForMaterial");
-        paramsMap.put("IMEI", TMSShareInfo.IMEI);
-        RequestParams params = new RequestParams(TMSConfigor.BASE_URL + TMSConfigor.GET_NEW_APK + TMSCommonUtils.createLinkStringByGet(paramsMap));
-        params.setAutoResume(true);//设置是否在下载是自动断点续传
-        params.setAutoRename(false);//设置是否根据头信息自动命名文件
-        params.setSaveFilePath(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath() + "/TMSFolder/" + m_appNameStr);
-        params.setExecutor(new PriorityExecutor(2, true));//自定义线程池,有效的值范围[1, 3], 设置为3时, 可能阻塞图片加载.
-        params.setCancelFast(true);//是否可以被立即停止.
-        //下面的回调都是在主线程中运行的,这里设置的带进度的回调
-        *//**
-         * 可取消的任务
-         *//*
-        cancelable = x.http().get(params, new Callback.ProgressCallback<File>() {
-            @Override
-            public void onCancelled(CancelledException arg0) {
-                Log.i("tag", "取消"+Thread.currentThread().getName());
-            }
-
-            @Override
-            public void onError(Throwable arg0, boolean arg1) {
-                Log.i("tag", "onError: 失败"+Thread.currentThread().getName() + "------Throwable:" + arg0.getMessage());
-                m_progressDlg.dismiss();
-            }
-
-            @Override
-            public void onFinished() {
-                Log.i("tag", "完成,每次取消下载也会执行该方法"+Thread.currentThread().getName());
-                m_progressDlg.dismiss();
-            }
-
-            @RequiresApi(api = 26)
-            @Override
-            public void onSuccess(File arg0) {
-                Log.i("tag", "下载成功的时候执行"+Thread.currentThread().getName());
-                // 下載完成
-                down(context);
-            }
-
-            @Override
-            public void onLoading(long total, long current, boolean isDownloading) {
-                if (isDownloading) {
-                    m_progressDlg.setProgress((int) (current*100/total));
-                    Log.i("tag", "下载中,会不断的进行回调:"+Thread.currentThread().getName());
-                }
-            }
-
-            @Override
-            public void onStarted() {
-                Log.i("tag", "开始下载的时候执行"+Thread.currentThread().getName());
-                m_progressDlg.show();
-            }
-
-            @Override
-            public void onWaiting() {
-                Log.i("tag", "等待,在onStarted方法之前执行"+Thread.currentThread().getName());
-            }
-        });*/
         ApplicationInfo applicationInfo = null;
         try {
             applicationInfo = context.getPackageManager().getApplicationInfo("com.android.providers.downloads", 0);
@@ -892,6 +833,24 @@ public class TMSCommonUtils {
         } catch (DbException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * 检查发票是否已做过物料回收
+     * @param customerID
+     * @param context
+     */
+    public static void checkHasDone(String customerID, Context context) {
+        try {
+            List<SubmitInvoiceInfo> invoiceInfos = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("customer_id","=",customerID).findAll();
+            if (invoiceInfos.size() > 0) {
+                Toast.makeText(context.getApplicationContext(), "該客戶已提交過物料回收請確認！", Toast.LENGTH_LONG).show();
+            }
+        } catch (DbException dbe) {
+            dbe.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -1041,9 +1000,7 @@ public class TMSCommonUtils {
 
     /**
      * 递归删除文件和文件夹
-     *
-     * @param file
-     *            要删除的根目录
+     * @param file 要删除的根目录
      */
     public static void RecursionDeleteFile(File file) {
         if (file.isFile()) {
@@ -1227,6 +1184,8 @@ public class TMSCommonUtils {
                     } catch (DbException e) {
                         TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "定位信息保存数据库失败：DB.TimingPositionService.save():\n" + new Gson().toJson(info) + "\n" + e.getMessage(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor.txt");
                         e.printStackTrace();
+                    } catch (Exception ex) {
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "定位信息保存数据库失败：DB.TimingPositionService.save():\n" + new Gson().toJson(info) + "\n" + ex.getMessage(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor.txt");
                     }
 
                 }else {

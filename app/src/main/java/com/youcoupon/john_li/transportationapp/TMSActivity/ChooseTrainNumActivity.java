@@ -79,7 +79,8 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
                 finish();
                 break;
             case R.id.choose_trains_not_divided:
-                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);
+                /*intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);*/
+                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity1.class);
                 intent.putExtra("Trains", "NOT_DIVIDED");
                 intent.putExtra("DataWay", "TODAY");
                 intent.putExtra("InvoiceList", mInvoiceListJson);
@@ -87,7 +88,7 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
                 finish();
                 break;
             case R.id.choose_trains_first:
-                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);
+                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity1.class);
                 intent.putExtra("Trains", "FIRST");
                 intent.putExtra("DataWay", "TODAY");
                 intent.putExtra("InvoiceList", mInvoiceListJson);
@@ -95,7 +96,7 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
                 finish();
                 break;
             case R.id.choose_trains_second:
-                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);
+                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity1.class);
                 intent.putExtra("Trains", "SECOND");
                 intent.putExtra("DataWay", "TODAY");
                 intent.putExtra("InvoiceList", mInvoiceListJson);
@@ -103,7 +104,7 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
                 finish();
                 break;
             case R.id.choose_trains_thrid:
-                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);
+                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity1.class);
                 intent.putExtra("Trains", "THIRD");
                 intent.putExtra("DataWay", "TODAY");
                 intent.putExtra("InvoiceList", mInvoiceListJson);
@@ -111,7 +112,7 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
                 finish();
                 break;
             case R.id.choose_trains_fourth:
-                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);
+                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity1.class);
                 intent.putExtra("Trains", "FOURTH");
                 intent.putExtra("DataWay", "TODAY");
                 intent.putExtra("InvoiceList", mInvoiceListJson);
@@ -119,7 +120,7 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
                 finish();
                 break;
             case R.id.choose_trains_fifth:
-                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);
+                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity1.class);
                 intent.putExtra("Trains", "FIFTH");
                 intent.putExtra("DataWay", "TODAY");
                 intent.putExtra("InvoiceList", mInvoiceListJson);
@@ -127,12 +128,11 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
                 finish();
                 break;
             case R.id.choose_trains_not_arrange:
-                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity.class);
+                intent = new Intent(ChooseTrainNumActivity.this, CarSplitActivity1.class);
                 intent.putExtra("Trains", "NOT_ARRANGE");
                 intent.putExtra("DataWay", "TODAY");
                 intent.putExtra("InvoiceList", mInvoiceListJson);
                 startActivity(intent);
-                finish();
                 break;
         }
     }

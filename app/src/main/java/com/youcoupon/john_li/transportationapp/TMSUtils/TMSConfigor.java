@@ -33,6 +33,8 @@ public class TMSConfigor {
     public final static String SUBMIT_INVOICE_STATE = "api/Business/PostInvoiceStatistic?";
     // 提交物料结算接口
     public final static String SUBMIT_MATERIALS_SETTLEMENT = "api/Business/PostStockMovement?";
+    // 拉取当前车次接口
+    public final static String GET_TRUNKNO_NOW = "api/Business/GetCurrentTruckNo?";
     // 拉取車隊本車次所有發票
     public final static String GET_TRUNK_INVOICE = "api/Business/GetTruckFDInvoice?";
     // 檢查用戶是否登陸

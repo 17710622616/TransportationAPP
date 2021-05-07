@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import com.youcoupon.john_li.transportationapp.R;
+import com.youcoupon.john_li.transportationapp.TMSActivity.DeliverGoodsActivity;
 
 /**
  * Created by John_Li on 20/7/2018.
@@ -73,6 +74,15 @@ public class TMSHeadView extends LinearLayout {
     }
 
     /**
+     * 關閉右边按钮文字
+     */
+    public void closeRightText(String str,OnClickListener listener){
+        rightTv.setVisibility(GONE);
+        rightTv.setText(str);
+        rightTv.setOnClickListener(listener);
+    }
+
+    /**
      * 右边按钮文字
      */
     public void setHeadHight(){
@@ -80,5 +90,21 @@ public class TMSHeadView extends LinearLayout {
         ViewGroup.LayoutParams lp = headLL.getLayoutParams();
         lp.height = 90;
         headLL.setLayoutParams(lp);
+    }
+
+    public void setRightTextUnable() {
+        if (rightTv != null) {
+            rightTv.setClickable(false);
+            rightTv.setEnabled(false);
+            rightTv.setVisibility(GONE);
+        }
+    }
+
+    public void setRightTextEnable() {
+        if (rightTv != null) {
+            rightTv.setClickable(true);
+            rightTv.setEnabled(true);
+            rightTv.setVisibility(VISIBLE);
+        }
     }
 }

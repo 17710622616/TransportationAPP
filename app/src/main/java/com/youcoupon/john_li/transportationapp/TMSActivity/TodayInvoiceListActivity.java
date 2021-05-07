@@ -67,6 +67,7 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
 
@@ -74,6 +75,8 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
     protected void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
+
+        headView.setRightTextEnable();
     }
 
     @Override
@@ -106,6 +109,7 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
     }
 
     private void getData() {
+        list.clear();
         List<SubmitInvoiceInfo> all = null;
         try {
             all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
@@ -136,15 +140,8 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
                 finish();
                 break;
             case R.id.head_right_tv:
-                for (SubmitInvoiceInfo info : list) {
-                    if (info.getRefundStatus() != 1 || info.getDepositStatus() != 1) {
-                        failOrderNum ++;
-                        //callNetSubmitFailOrder(info);
-                        Intent intent = new Intent(TodayInvoiceListActivity.this, SubmitFailIntentService.class);
-                        intent.putExtra("SubmitInvoiceInfo", new Gson().toJson(info));
-                        startService(intent);
-                    }
-                }
+                headView.setRightTextUnable();
+                getData();
                 if(list.size() > 0) {
                     dialog = new ProgressDialog(TodayInvoiceListActivity.this);
                     dialog.setTitle("提示");
@@ -152,10 +149,33 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
                     dialog.setCancelable(false);
                     dialog.show();
 
+                    TMSCommonUtils.resubmitFailOrder(this);
+
                     handler.sendEmptyMessageDelayed(1, 20 * 1000);
                 } else {
                     Toast.makeText(this, "訂單已全部提交成功！", Toast.LENGTH_SHORT).show();
                 }
+
+                for (SubmitInvoiceInfo info : list) {
+                    if (info.getRefundStatus() != 1 || info.getDepositStatus() != 1) {
+                        failOrderNum ++;
+                    }
+                }
+                /*for (SubmitInvoiceInfo info : list) {
+                    if (info.getRefundStatus() != 1 || info.getDepositStatus() != 1) {
+                        failOrderNum ++;
+                        //callNetSubmitFailOrder(info);
+                        //Intent intent = new Intent(TodayInvoiceListActivity.this, SubmitFailIntentService.class);
+                        //intent.putExtra("SubmitInvoiceInfo", new Gson().toJson(info));
+                        //startService(intent);
+                    }
+                }
+                // 当有提交失败时
+                if (failOrderNum > 0) {
+                    Intent intent = new Intent(TodayInvoiceListActivity.this, SubmitFailIntentService.class);
+                    intent.putExtra("SubmitInvoiceInfo", new Gson().toJson(null));
+                    startService(intent);
+                }*/
                 break;
         }
     }
@@ -169,6 +189,10 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
                 dialog.dismiss();
                 list.clear();
                 getData();
+
+                if (headView !=null) {
+                    headView.setRightTextEnable();
+                }
             }
         }
     }

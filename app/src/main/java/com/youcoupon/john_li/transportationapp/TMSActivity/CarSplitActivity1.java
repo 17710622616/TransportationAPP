@@ -201,13 +201,19 @@ public class CarSplitActivity1 extends  BaseActivity implements View.OnClickList
 
         headView.setTitle("今日分車");
         headView.setLeft(this);
-        headView.setRightText("提交", this);
+        if (TMSShareInfo.mUserModelList.get(0).getSalesmanID().substring(0,1).equals("D")) {
+            headView.setRightText("提交", this);
+        }
 
         tableList = new ArrayList<>();
         checkedList = new ArrayList<>();
         rv.setLayoutManager(new LinearLayoutManager(this));
         mCarSpliteTableAdapter = new CarSpliteTableAdapter(this, tableList, this, this);
         rv.setAdapter(mCarSpliteTableAdapter);;
+
+        if (!TMSShareInfo.mUserModelList.get(0).getSalesmanID().substring(0,1).equals("D")) {
+            moveTv.setVisibility(View.INVISIBLE);
+        }
 
         // 加載初始車次
         switch (trains) {

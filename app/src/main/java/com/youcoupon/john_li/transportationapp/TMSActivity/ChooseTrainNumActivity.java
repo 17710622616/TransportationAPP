@@ -37,6 +37,7 @@ public class ChooseTrainNumActivity extends BaseActivity implements View.OnClick
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override

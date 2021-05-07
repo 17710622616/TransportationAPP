@@ -159,7 +159,7 @@ public class MainActivity extends BaseActivity {
             startService(intent);
         }
 
-        // 清楚一个星期前的数据
+        // 清楚一个星期前的定位数据
         TMSCommonUtils.deleteSevenDaysAgoPosition();
 
         // 检查登录状态及更新状态
@@ -221,7 +221,7 @@ public class MainActivity extends BaseActivity {
                                 TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
                                 TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
                                 TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-                            } catch (DbException e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
                             }
 
@@ -276,6 +276,9 @@ public class MainActivity extends BaseActivity {
             SpuUtils.put(this, "loginMsg", "");
             startActivityForResult(new Intent(MainActivity.this, LoginActivity.class), 1);
         }
+
+        // 检查时间
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -371,7 +374,9 @@ public class MainActivity extends BaseActivity {
                         loginOut();
                         break;
                     default:
+
                         break;
+
                 }
             }
         });
@@ -400,6 +405,7 @@ public class MainActivity extends BaseActivity {
         if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
             menuList.add("發票分車");
         }
+        //menuList.add("發票分車");
         menuList.add("客戶簽收");
         menuList.add("切換公司");
         menuList.add("數據更新");
@@ -419,7 +425,7 @@ public class MainActivity extends BaseActivity {
             TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
             TMSApplication.db.delete(InvoiceStateInfo.class); //child_info表中数据将被全部删除
             TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -458,7 +464,7 @@ public class MainActivity extends BaseActivity {
                             }
                         }
                         Toast.makeText(MainActivity.this, "獲取客戶資料成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "獲取客戶資料失敗！", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
@@ -534,7 +540,7 @@ public class MainActivity extends BaseActivity {
                             }
                         }
                         Toast.makeText(MainActivity.this, "獲取發票資料成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "獲取發票資料失敗！", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
@@ -613,7 +619,7 @@ public class MainActivity extends BaseActivity {
                             }
                         }
                         Toast.makeText(MainActivity.this, "獲取物料資料成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "獲取物料資料失敗！", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
@@ -689,7 +695,7 @@ public class MainActivity extends BaseActivity {
                             }
                         }
                         Toast.makeText(MainActivity.this, "獲取物料關係資料成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "獲取物料關係資料失敗！", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
@@ -757,7 +763,7 @@ public class MainActivity extends BaseActivity {
                             }
                         }
                         Toast.makeText(MainActivity.this, "獲取OK簽到路線成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "獲取OK簽到路線失敗！", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
@@ -820,7 +826,7 @@ public class MainActivity extends BaseActivity {
                             }
                         }
                         Toast.makeText(MainActivity.this, "獲取OK簽到客戶資料成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "獲取OK簽到客戶資料失敗！", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
@@ -902,8 +908,8 @@ public class MainActivity extends BaseActivity {
             materialNumberInfo6.setMaterialRefundNum(0);
             materialNumberInfo6.setMaterialDepositeNum(0);
             TMSApplication.db.save(materialNumberInfo6);
-        } catch (DbException e) {
-
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         initView();
@@ -954,7 +960,7 @@ public class MainActivity extends BaseActivity {
                                 // 當是今天，但上次更新有失敗的情況則再次更新
                                 try {
                                     TMSApplication.db.delete(ClockInPhotoInfo.class); //child_info表中数据将被全部删除
-                                } catch (DbException e) {
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                                 forcedUpdate72Data();
@@ -1049,17 +1055,35 @@ public class MainActivity extends BaseActivity {
     }
 
     private void closeAccount() {
+        //判斷登錄戶口為40的
         List<UserModel> userModelList2 = new Gson().fromJson(String.valueOf(SpuUtils.get(MainActivity.this, "loginMsg", "")), new TypeToken<List<UserModel>>() {}.getType());
-        boolean flag2 = false;
+        boolean flag1 = false;
         for (UserModel model : userModelList2) {
             if (model.getCorp().equals("40") || model.getCorp().equals("XX")) {
-                flag2 = true;
+                flag1 = true;
             }
         }
+        // 判斷車組發票已提交成功
+        boolean flag2 = false;
+        List<SubmitInvoiceInfo> all = null;
+        try {
+            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
+            if(all != null){
+                for (SubmitInvoiceInfo submitInvoiceList : all) {
+                    if (submitInvoiceList.getDepositStatus() != 1 || submitInvoiceList.getRefundStatus() != 1){
+                        flag2 = true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        if (!flag2) {
+        if (!flag1) {
             Toast.makeText(MainActivity.this, "請先登錄澳門可口可樂飲料有限公司賬戶！", Toast.LENGTH_SHORT).show();
-        } else {
+        } else if(flag2) {
+            Toast.makeText(MainActivity.this, "您尚有未提交成功的發票，請先提交成功再結算！", Toast.LENGTH_SHORT).show();
+        }else {
             new AlertDialog.Builder(MainActivity.this)
                     .setTitle("系統提示")
                     .setMessage("結算前會拉取車隊本車次所有數據，請確認!")
@@ -1193,7 +1217,7 @@ public class MainActivity extends BaseActivity {
                     MainActivity.this.startService(intent);
                 }
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -1230,7 +1254,7 @@ public class MainActivity extends BaseActivity {
                     showLoginOutDialog();
                 }
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -1396,7 +1420,7 @@ public class MainActivity extends BaseActivity {
                                 if (all == null) {
                                     all = new ArrayList<>();
                                 }
-                            } catch (DbException e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
                             }
 
@@ -1409,56 +1433,105 @@ public class MainActivity extends BaseActivity {
                                 }
 
                                 if (!isExit) {
-                                    // 插入該條數據
-                                    try {
-                                        List<DeliverInvoiceModel> deliverInvoiceModelList = pullInvoiceModel.transModelToDB(pullInvoiceModel.getLine());
-                                        // 物料送出/回收记录
-                                        SubmitInvoiceInfo mSubmitInvoiceInfo = new SubmitInvoiceInfo();
-                                        mSubmitInvoiceInfo.setOrderBody(new Gson().toJson(deliverInvoiceModelList));
-                                        mSubmitInvoiceInfo.setRefrence(pullInvoiceModel.getHeader().getReference());
-                                        mSubmitInvoiceInfo.setSalesmanId(pullInvoiceModel.getHeader().getOperationID());
-                                        mSubmitInvoiceInfo.setCustomerID(pullInvoiceModel.getHeader().getCustomerID());
-                                        mSubmitInvoiceInfo.setCustomerName(pullInvoiceModel.getHeader().getCustomerName());
-                                        mSubmitInvoiceInfo.setInvoiceNo(pullInvoiceModel.getHeader().getInvoiceNo());
-                                        mSubmitInvoiceInfo.setDepositStatus(1);
-                                        mSubmitInvoiceInfo.setRefundStatus(1);
-                                        TMSApplication.db.save(mSubmitInvoiceInfo);
-
-                                        //插入物料記錄
-                                        for (DeliverInvoiceModel deliverInvoiceModel : deliverInvoiceModelList) {
-                                            int depositNum = 0;
-                                            int refundNum = 0;
-
-                                            // 查詢該物料原本有多少回收及送出物料
-                                            List<MaterialNumberInfo> allMaterialNumber = TMSApplication.db.selector(MaterialNumberInfo.class).where("material_number_id", "=", deliverInvoiceModel.getMaterialId()).findAll();
-                                            if(allMaterialNumber == null) {
-                                                allMaterialNumber = new ArrayList<>();
-                                            }
-                                            for(MaterialNumberInfo model : allMaterialNumber) {
-                                                depositNum = model.getMaterialDepositeNum();
-                                                refundNum = model.getMaterialRefundNum();
-                                            }
-
-                                            // 修改物料總數量
-                                            if (deliverInvoiceModel.getSendOutNum() > 0) {
+                                    // 判斷是否存在該發票，PDA提交失敗，但服務器已提交成功
+                                    boolean flag = false;
+                                    for (SubmitInvoiceInfo submitInvoiceList : all) {
+                                        if (pullInvoiceModel.getHeader().getReference().equals(submitInvoiceList.getRefrence())){
+                                            // 判斷是否為主單
+                                            try {
                                                 WhereBuilder b = WhereBuilder.b();
-                                                b.and("material_number_id","=", deliverInvoiceModel.getMaterialId()); //构造修改的条件
-                                                KeyValue name = new KeyValue("material_deposite_num", depositNum + deliverInvoiceModel.getSendOutNum());
-                                                TMSApplication.db.update(MaterialNumberInfo.class,b,name);
-                                            }
-
-                                            if (deliverInvoiceModel.getRecycleNum() > 0) {
-                                                WhereBuilder b = WhereBuilder.b();
-                                                b.and("material_number_id","=", deliverInvoiceModel.getMaterialId()); //构造修改的条件
-                                                KeyValue name = new KeyValue("material_refund_num", refundNum + deliverInvoiceModel.getRecycleNum());
-                                                TMSApplication.db.update(MaterialNumberInfo.class,b,name);
+                                                b.and("refrence","=", pullInvoiceModel.getHeader().getReference()); //构造修改的条件
+                                                KeyValue v1 = new KeyValue("invoice_no", pullInvoiceModel.getHeader().getInvoiceNo());
+                                                KeyValue v2 = null;
+                                                if (pullInvoiceModel.getLine().get(0).getQuantity() > 0) {
+                                                    v2 = new KeyValue("depositStatus", 1);
+                                                } else {
+                                                    v2 = new KeyValue("refundStatus", 1);
+                                                }
+                                                TMSApplication.db.update(SubmitInvoiceInfo.class,b,v1,v2);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }finally {
+                                                flag = true;
+                                                break;
                                             }
                                         }
 
-                                    } catch (DbException e) {
-                                        e.printStackTrace();
-                                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "拉取發票信息異常：" + e.getStackTrace() + "\n" + new Gson().toJson(pullInvoiceModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Error");
+                                        if (pullInvoiceModel.getHeader().getReference().equals(submitInvoiceList.getSunRefrence())) {
+                                            // 判斷是否為子單
+                                            try {
+                                                WhereBuilder b = WhereBuilder.b();
+                                                b.and("sun_refrence","=", pullInvoiceModel.getHeader().getReference()); //构造修改的条件
+                                                KeyValue v1 = new KeyValue("sun_invoice_no", pullInvoiceModel.getHeader().getInvoiceNo());
+                                                KeyValue v2 = null;
+                                                if (pullInvoiceModel.getLine().get(0).getQuantity() > 0) {
+                                                    v2 = new KeyValue("depositStatus", 1);
+                                                } else {
+                                                    v2 = new KeyValue("refundStatus", 1);
+                                                }
+                                                TMSApplication.db.update(SubmitInvoiceInfo.class,b,v1,v2);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }finally {
+                                                flag = true;
+                                                break;
+                                            }
+                                        }
                                     }
+
+                                    if (!flag) {
+                                        // 都不存在插入該條數據
+                                        try {
+                                            List<DeliverInvoiceModel> deliverInvoiceModelList = pullInvoiceModel.transModelToDB(pullInvoiceModel.getLine());
+                                            // 物料送出/回收记录
+                                            SubmitInvoiceInfo mSubmitInvoiceInfo = new SubmitInvoiceInfo();
+                                            mSubmitInvoiceInfo.setOrderBody(new Gson().toJson(deliverInvoiceModelList));
+                                            mSubmitInvoiceInfo.setRefrence(pullInvoiceModel.getHeader().getReference());
+                                            mSubmitInvoiceInfo.setSalesmanId(pullInvoiceModel.getHeader().getOperationID());
+                                            mSubmitInvoiceInfo.setCustomerID(pullInvoiceModel.getHeader().getCustomerID());
+                                            mSubmitInvoiceInfo.setCustomerName(pullInvoiceModel.getHeader().getCustomerName());
+                                            mSubmitInvoiceInfo.setInvoiceNo(pullInvoiceModel.getHeader().getInvoiceNo());
+                                            mSubmitInvoiceInfo.setDepositStatus(1);
+                                            mSubmitInvoiceInfo.setRefundStatus(1);
+                                            TMSApplication.db.save(mSubmitInvoiceInfo);
+
+                                            //插入物料記錄
+                                            for (DeliverInvoiceModel deliverInvoiceModel : deliverInvoiceModelList) {
+                                                int depositNum = 0;
+                                                int refundNum = 0;
+
+                                                // 查詢該物料原本有多少回收及送出物料
+                                                List<MaterialNumberInfo> allMaterialNumber = TMSApplication.db.selector(MaterialNumberInfo.class).where("material_number_id", "=", deliverInvoiceModel.getMaterialId()).findAll();
+                                                if(allMaterialNumber == null) {
+                                                    allMaterialNumber = new ArrayList<>();
+                                                }
+                                                for(MaterialNumberInfo model : allMaterialNumber) {
+                                                    depositNum = model.getMaterialDepositeNum();
+                                                    refundNum = model.getMaterialRefundNum();
+                                                }
+
+                                                // 修改物料總數量
+                                                if (deliverInvoiceModel.getSendOutNum() > 0) {
+                                                    WhereBuilder b = WhereBuilder.b();
+                                                    b.and("material_number_id","=", deliverInvoiceModel.getMaterialId()); //构造修改的条件
+                                                    KeyValue name = new KeyValue("material_deposite_num", depositNum + deliverInvoiceModel.getSendOutNum());
+                                                    TMSApplication.db.update(MaterialNumberInfo.class,b,name);
+                                                }
+
+                                                if (deliverInvoiceModel.getRecycleNum() > 0) {
+                                                    WhereBuilder b = WhereBuilder.b();
+                                                    b.and("material_number_id","=", deliverInvoiceModel.getMaterialId()); //构造修改的条件
+                                                    KeyValue name = new KeyValue("material_refund_num", refundNum + deliverInvoiceModel.getRecycleNum());
+                                                    TMSApplication.db.update(MaterialNumberInfo.class,b,name);
+                                                }
+                                            }
+
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "拉取發票信息異常：" + e.getStackTrace() + "\n" + new Gson().toJson(pullInvoiceModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Error");
+                                        }
+                                    }
+
                                 }
                             }
                         }

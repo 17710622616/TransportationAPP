@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,6 +40,7 @@ import com.youcoupon.john_li.transportationapp.TMSModel.InvoiceViewModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.MaterialCorrespondenceModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
+import com.youcoupon.john_li.transportationapp.TMSService.SubmitFailIntentService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.ScanHelper;
 import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
@@ -52,10 +55,10 @@ import org.json.JSONObject;
 import org.xutils.common.Callback;
 import org.xutils.common.util.KeyValue;
 import org.xutils.db.sqlite.WhereBuilder;
-import org.xutils.ex.DbException;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -93,6 +96,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         initView();
         setListener();
         initData();
+        // 检查时间
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -146,6 +151,25 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         unregisterReceiver(myCodeReciver);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try {
+            if (headView != null) {
+                headView.setRightTextEnable();
+            }
+            if (mHandler != null && retryList != null) {
+                for (Runnable r : retryList) {
+                    if (r != null) {
+                        mHandler.removeCallbacks(r);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * 获取所有物料用作当前发票的物料记录
      */
@@ -168,7 +192,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             } else {
                 Toast.makeText(this, "暫無物料信息，請檢查並更新！", Toast.LENGTH_SHORT).show();
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -227,6 +251,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 finish();
                 break;
             case R.id.head_right_tv:
+                headView.setRightTextUnable();
                 dialog = new ProgressDialog(this);
                 dialog.setTitle("提示");
                 dialog.setMessage("正在提交發票......");
@@ -253,7 +278,9 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         mSubmitInvoiceInfo.setRefundStatus(0);
                         TMSApplication.db.save(mSubmitInvoiceInfo);
                         checkInvoiceType(TMSShareInfo.IMEI + time);
-                    } catch (DbException e) {
+
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "提交物料回收：" + TMSCommonUtils.getTimeNow() + "\n" + new Gson().toJson(mSubmitInvoiceInfo), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Event.txt");
+                    } catch (Exception e) {
                         e.printStackTrace();
                         dialog.dismiss();
                         Toast.makeText(DeliverGoodsActivity.this, "訂單存儲失敗，請重試！", Toast.LENGTH_SHORT).show();
@@ -296,7 +323,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     depositNum = model.getMaterialDepositeNum();
                     refundNum = model.getMaterialRefundNum();
                 }
-            } catch (DbException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             int sendOutNum = mDeliverInvoiceModelList.get(i).getSendOutNum();
@@ -308,7 +335,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     b.and("material_number_id","=", mDeliverInvoiceModelList.get(i).getMaterialId()); //构造修改的条件
                     KeyValue name = new KeyValue("material_deposite_num", depositNum + mDeliverInvoiceModelList.get(i).getSendOutNum());
                     TMSApplication.db.update(MaterialNumberInfo.class,b,name);
-                } catch (DbException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -319,7 +346,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     b.and("material_number_id","=", mDeliverInvoiceModelList.get(i).getMaterialId()); //构造修改的条件
                     KeyValue name = new KeyValue("material_refund_num", refundNum + mDeliverInvoiceModelList.get(i).getRecycleNum());
                     TMSApplication.db.update(MaterialNumberInfo.class,b,name);
-                } catch (DbException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -346,7 +373,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             try {
                 // 当没有回收物料时将回收物料状态记录为提交成功
                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
-            } catch (DbException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -360,7 +387,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             try {
                 // 当没有回收物料时将送出物料状态记录为提交成功
                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
-            } catch (DbException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -374,6 +401,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
      * @param reference
      */
     private void callNetSubmitInvoice(final int depositNum, final int refundNum, final int type, final String reference) {
+        Log.d("物料回收", "提交发票" + type + "," + reference);
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
         paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
@@ -395,9 +423,12 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 // 当为发票类型为回收物料时，判断送出物料是否为0，不为0则以送出物料为主單
                 // 主单不修改发票号码(即不处理订单号码以送出单的编码为发票编码)，当送出物料数量为0时以回收物料为主单直接修以回收物料发票编码为发票编码)
                 if (depositNum == 0) {
+                    //主单
                     header.setReference(submitInvoiceInfo.getRefrence());
                 } else {
-                    String sunReference = TMSShareInfo.IMEI + new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-", "").replace(":", "").replace(" ", "");
+                    // 子单
+                    //String sunReference = TMSShareInfo.IMEI + new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-", "").replace(":", "").replace(" ", "");
+                    String sunReference = mSubmitInvoiceInfo.getRefrence() + "S";
                     mSubmitInvoiceInfo.setSunRefrence(sunReference);
                     try {
                         WhereBuilder b = WhereBuilder.b();
@@ -408,11 +439,6 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         Toast.makeText(this, "666", Toast.LENGTH_SHORT).show();
                     }
                     header.setReference(sunReference);
-
-                    /*String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
-                    time = time.replace(":","");
-                    time = time.replace(" ","");
-                    header.setReference(TMSShareInfo.IMEI + time);*/
                 }
             }
 
@@ -440,7 +466,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 params.setAsJsonContent(true);
                 String body = new Gson().toJson(postInvoiceModel);
                 params.setBodyContent(body);
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         params.setConnectTimeout(10 * 1000);
@@ -456,10 +482,11 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     if (type == 0) {
                         try {
                             // 修改发票号码
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=", reference),new KeyValue("invoice_no", orderNo));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=", reference),new KeyValue("invoice_no", orderNo),new KeyValue("depositStatus", 1));
                             // 修改发票送出物料状态
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 1));
-                        } catch (DbException e) {
+                            //TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 1));
+                        } catch (Exception e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码1：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     } else {
@@ -467,20 +494,23 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         if (depositNum == 0) {
                             try {
                                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("invoice_no", orderNo));
-                            } catch (DbException e) {
+                            } catch (Exception e) {
+                                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码2：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                                 e.printStackTrace();
                             }
                         } else {
                             try {
                                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("sun_invoice_no", orderNo));
-                            } catch (DbException e) {
+                            } catch (Exception e) {
+                                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码3：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                                 e.printStackTrace();
                             }
                         }
 
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 1));
-                        } catch (DbException e) {
+                        } catch (Exception e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码4：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     }
@@ -489,18 +519,22 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     if (type == 0) {
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 2));
-                        } catch (DbException e) {
+                        } catch (Exception e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码5：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     } else {
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 2));
-                        } catch (DbException e) {
+                        } catch (Exception e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码6：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     }
                     Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！" + data, Toast.LENGTH_SHORT).show();
                 }
+
+                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "錯誤信息，提交發票返回異常9：\n" + new Gson().toJson(commonModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             }
 
             @Override
@@ -508,13 +542,15 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 if (type == 0) {
                     try {
                         TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 2));
-                    } catch (DbException e) {
+                    } catch (Exception e) {
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码7：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                         e.printStackTrace();
                     }
                 } else {
                     try {
                         TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 2));
-                    } catch (DbException e) {
+                    } catch (Exception e) {
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码8：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                         e.printStackTrace();
                     }
                 }
@@ -523,6 +559,10 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 } else {
                     Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
                 }
+
+                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，提交發票返回異常9：" + ex.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+
+                doReTry();
             }
 
             @Override
@@ -545,8 +585,42 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 } catch (Exception e) {
                     Toast.makeText(DeliverGoodsActivity.this, e.getStackTrace().toString(), Toast.LENGTH_SHORT).show();
                 }
+
+                try {
+                    // 计数重新提交队列不可超过5条
+                    int failNum = (int) SpuUtils.get(DeliverGoodsActivity.this, "failNum", 0);
+                    SpuUtils.put(DeliverGoodsActivity.this, "failNum", failNum-1);
+                } catch (Exception exc) {
+                    exc.printStackTrace();
+                }
             }
+
         });
+    }
+
+    private void doReTry() {
+        // 提交發票失敗時重新遞交
+        try {
+            // 提交發票失敗時重新遞交
+            mHandler = new Handler();
+            Runnable retryThred = new Runnable() {
+                @Override
+                public void run() {
+                    time --;
+                    if(time > 0) {
+                        mHandler.postDelayed(this, 45 * 1000);
+                        TMSCommonUtils.resubmitFailOrder(DeliverGoodsActivity.this);
+                    } else {
+                        mHandler.removeCallbacks(this);
+                    }
+
+                    retryList.add(this);
+                }
+            };
+            mHandler.postDelayed(retryThred, 30 * 1000);
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
     }
 
     @Override
@@ -554,11 +628,30 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             if (requestCode == 1) {
-                finish();
+                //finish();
+                //清空物料信息
+                getData();
+
+                mSubmitInvoiceInfo.setCustomerID("");
+                mSubmitInvoiceInfo.setCustomerName("");
+                delivergoods_customer_no.setText("");
+                delivergoods_customer_name.setText("");
+                delivergoods_customer_address.setText("");
+                delivergoods_tel.setText("");
+                scanInvoiceTv.setText("");
+                headView.closeRightText("提交", this);
+
+                mDeliverGoodsAdapter.notifyDataSetChanged();
+
+                headView.setRightTextEnable();
             }
         }
     }
 
+    //重新提交的处理：
+    private Handler mHandler;
+    private List<Runnable> retryList = new ArrayList<>();
+    private int time = 3;
     int invoiceResult;
     int submitTimes;
 
@@ -570,10 +663,15 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 try {
                     //str = str.substring(str.length() - 8, str.length());
                     str = str.replaceAll("[a-zA-Z]","");
-                    if (str.length() > 7) {
-                        str = str.substring(0, str.length() - 1);
+                    if (str.length() < 9) {
+                        if (str.length() > 7) {
+                            str = str.substring(0, str.length() - 1);
+                        }
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {
+
+                }
+
                 if (!"".equals(str)) {
                     Barcodemode code = new Barcodemode();
                     code.setBarcode(str);
@@ -626,7 +724,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             }
 
             mDeliverGoodsAdapter.notifyDataSetChanged();
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -782,7 +880,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 //Toast.makeText(DeliverGoodsActivity.this, "未找到該該發票！", Toast.LENGTH_SHORT).show();
                 IshavaCustomerCode(code);
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(DeliverGoodsActivity.this, "查找發票錯誤！", Toast.LENGTH_SHORT).show();
             IshavaCustomerCode(code);
@@ -797,7 +895,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         //添加查询条件进行查询
         List<CustomerInfo> all = null;
         try {
-            all = TMSApplication.db.selector(CustomerInfo.class).where("customer_id","=", code.getBarcode()).findAll();
+            String bar = code.getBarcode();
+            all = TMSApplication.db.selector(CustomerInfo.class).where("customer_id","==", bar).findAll();//
             CustomerInfo customerInfo = null;
             if (all != null) {
                 for(CustomerInfo info :all){
@@ -806,6 +905,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             }
 
             if (customerInfo != null) {
+                TMSCommonUtils.checkHasDone(customerInfo.getCustomerID(), this);
                 //清空物料信息
                 getData();
 
@@ -874,7 +974,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             } else {
                 Toast.makeText(DeliverGoodsActivity.this, "未找到該客戶！", Toast.LENGTH_SHORT).show();
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

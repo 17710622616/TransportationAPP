@@ -59,6 +59,7 @@ public class DeleverInvoiceDetialActivity extends BaseActivity implements View.O
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -209,7 +210,7 @@ public class DeleverInvoiceDetialActivity extends BaseActivity implements View.O
             for(CustomerInfo customerInfo : all){
                 customerName = customerInfo.getCustomerName();
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();

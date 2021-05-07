@@ -37,6 +37,7 @@ public class CarSplitInvoiceDetialActiviy extends BaseActivity implements View.O
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override

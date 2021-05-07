@@ -21,7 +21,7 @@ public class TMSApplication extends Application {
         super.onCreate();
         x.Ext.init(this);
 
-        //CrashHandler.getInstance().init(getApplicationContext());
+        CrashHandler.getInstance().init(getApplicationContext());
     }
 
     public static void exit() {

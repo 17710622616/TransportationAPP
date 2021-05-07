@@ -7,6 +7,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import com.youcoupon.john_li.transportationapp.R;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
 import org.w3c.dom.Text;
@@ -25,6 +26,7 @@ public class MaterialRecyclingActivity extends BaseActivity implements View.OnCl
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override

@@ -19,6 +19,7 @@ import com.youcoupon.john_li.transportationapp.TMSDBInfo.ClockInOrderStatusInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.ClockInPhotoInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.ClockInOrderStatusModel;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
 import org.xutils.ex.DbException;
@@ -44,6 +45,7 @@ public class ClockInOrderStatusActivity extends BaseActivity implements View.OnC
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -108,7 +110,7 @@ public class ClockInOrderStatusActivity extends BaseActivity implements View.OnC
                     }
                 }
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return list;

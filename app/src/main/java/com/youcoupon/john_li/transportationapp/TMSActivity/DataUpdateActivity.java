@@ -5,6 +5,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 
 import com.youcoupon.john_li.transportationapp.R;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 
 /**
  * Created by John_Li on 20/7/2018.
@@ -18,6 +19,7 @@ public class DataUpdateActivity extends BaseActivity {
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.Checkable;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -19,6 +20,7 @@ import com.youcoupon.john_li.transportationapp.TMSActivity.CarSplitActivity;
 import com.youcoupon.john_li.transportationapp.TMSActivity.CarSplitInvoiceDetialActiviy;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CarSplitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CarSplitInvoiceVM;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 
 import java.util.List;
 
@@ -63,6 +65,9 @@ public class CarSpliteTableAdapter extends RecyclerView.Adapter<CarSpliteTableAd
         holder.invoiceCAddressTv.setText(list.get(position).getCustomerAddress());
         holder.invoicedistrictTv.setText(list.get(position).getDistrict());
         holder.invoiceCb.setChecked(list.get(position).isChecked());
+        if (!TMSShareInfo.mUserModelList.get(0).getSalesmanID().substring(0,1).equals("D")) {
+            holder.invoiceCb.setVisibility(View.INVISIBLE);
+        }
         //点击实现选择功能，当然可以把点击事件放在item_cb对应的CheckBox上，只是焦点范围较小
         holder.invoiceNoTv.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -121,7 +126,7 @@ public class CarSpliteTableAdapter extends RecyclerView.Adapter<CarSpliteTableAd
 
     class ViewHolder extends RecyclerView.ViewHolder {
         private LinearLayout invoiceLL;
-        public Checkable invoiceCb;
+        public CheckBox invoiceCb;
         public TextView invoiceNoTv;
         public TextView invoiceTypeTv;
         public TextView invoiceQTYTv;

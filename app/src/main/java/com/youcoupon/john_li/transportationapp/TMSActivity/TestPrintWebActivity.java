@@ -74,6 +74,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -284,7 +285,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
             for(CustomerInfo customerInfo : all)      {
                 customerName = customerInfo.getCustomerName();
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.testCreateHTML():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             e.printStackTrace();
         }

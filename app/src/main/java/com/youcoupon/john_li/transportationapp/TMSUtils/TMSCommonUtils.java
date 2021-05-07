@@ -19,6 +19,7 @@ import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
@@ -44,6 +45,7 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.common.StringUtils;
 import com.youcoupon.john_li.transportationapp.TMSActivity.DeliverGoodsActivity;
+import com.youcoupon.john_li.transportationapp.TMSActivity.TodayInvoiceListActivity;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CarSplitInvoiceDetialInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TimingPositionInfo;
@@ -51,6 +53,8 @@ import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CarSplitInvoiceVM;
 import com.youcoupon.john_li.transportationapp.TMSModel.GPS;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
+import com.youcoupon.john_li.transportationapp.TMSService.SubmitFailIntentService;
+import com.youcoupon.john_li.transportationapp.TMSView.IToast;
 
 import org.xutils.common.Callback;
 import org.xutils.db.sqlite.WhereBuilder;
@@ -61,12 +65,16 @@ import org.xutils.x;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -440,6 +448,102 @@ public class TMSCommonUtils {
         return df.format(date);
     }
 
+    /**
+     * 计算时间与当前系统天数差别
+     * @return
+     */
+    public static long calculateDayDiff(String time2) {
+        long days = -99999;
+        try{
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            /* 当前系统时间*/
+            Date date = new Date(System.currentTimeMillis());
+            String time1 = simpleDateFormat.format(date);
+
+            /*计算时间差*/
+            Date begin = simpleDateFormat.parse(time1);
+            Date end = simpleDateFormat.parse(time2);
+            long diff = end.getTime() - begin.getTime();
+            /*计算天数*/
+            days = diff / (1000 * 60 * 60 * 24);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return days;
+    }
+
+    /**
+     * 计算时间与当前系统小时差别
+     * @return
+     */
+    public static long calculateHourDiff(String time2) {
+        long hours = -99999;
+        try{
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            /* 当前系统时间*/
+            Date date = new Date(System.currentTimeMillis());
+            String time1 = simpleDateFormat.format(date);
+
+            /*计算时间差*/
+            Date begin = simpleDateFormat.parse(time1);
+            Date end = simpleDateFormat.parse(time2);
+            long diff = end.getTime() - begin.getTime();
+            /*计算天数*/
+            hours = (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return hours;
+    }
+
+    /**
+     * 计算时间与当前系统分钟差别
+     * @return
+     */
+    public static long calculateMinutesDiff(String time2) {
+        long minutes = -99999;
+        try{
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            /* 当前系统时间*/
+            Date date = new Date(System.currentTimeMillis());
+            String time1 = simpleDateFormat.format(date);
+
+            /*计算时间差*/
+            Date begin = simpleDateFormat.parse(time1);
+            Date end = simpleDateFormat.parse(time2);
+            long diff = end.getTime() - begin.getTime();
+            /*计算天数*/
+            minutes = (diff % (1000 * 60 * 60)) / (1000 * 60);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return minutes;
+    }
+
+    /**
+     * 计算时间与当前系统秒数差别
+     * @return
+     */
+    public static long calculateSecondsDiff(String time2) {
+        long seconds = -99999;
+        try{
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            /* 当前系统时间*/
+            Date date = new Date(System.currentTimeMillis());
+            String time1 = simpleDateFormat.format(date);
+
+            /*计算时间差*/
+            Date begin = simpleDateFormat.parse(time1);
+            Date end = simpleDateFormat.parse(time2);
+            long diff = end.getTime() - begin.getTime();
+            /*计算天数*/
+            seconds = diff / (1000 * 60 * 60 * 24);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return seconds;
+    }
+
     public static String createLinkStringByGet(Map<String, String> params) {
         String prestr = "";
         try {
@@ -506,7 +610,6 @@ public class TMSCommonUtils {
      **/
     public static String encryptDES(String encryptString) {
         try {
-
             IvParameterSpec zeroIv = new IvParameterSpec(new byte[8]);
             SecretKeySpec key = new SecretKeySpec(DESKey.getBytes(), "DES");
             Cipher cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
@@ -843,14 +946,128 @@ public class TMSCommonUtils {
      */
     public static void checkHasDone(String customerID, Context context) {
         try {
-            List<SubmitInvoiceInfo> invoiceInfos = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("customer_id","=",customerID).findAll();
+            List<SubmitInvoiceInfo> invoiceInfos = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("customer_id","==",customerID).findAll();
             if (invoiceInfos.size() > 0) {
-                Toast.makeText(context.getApplicationContext(), "該客戶已提交過物料回收請確認！", Toast.LENGTH_LONG).show();
+                /*Toast toast = Toast.makeText(context.getApplicationContext(), "該客戶已提交過物料回收請確認！", Toast.LENGTH_LONG);
+                toast.setGravity(0,0,0);
+                toast.show();*/
+                IToast toast = new IToast();
+                toast.show("該客戶已提交過物料回收請注意！", Toast.LENGTH_LONG, context);
             }
         } catch (DbException dbe) {
             dbe.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 重新提交失败订单
+     * @param context
+     */
+    public static void resubmitFailOrder(Context context) {
+        List<SubmitInvoiceInfo> list = new ArrayList<>();
+        List<SubmitInvoiceInfo> all = null;
+        try {
+            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
+            if (all != null) {
+                if (all.size() > 0) {
+                    for (SubmitInvoiceInfo info : all) {
+                        list.add(info);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+        }
+
+        int failNum = 0;
+        for (SubmitInvoiceInfo info : list) {
+            if (info.getRefundStatus() != 1 || info.getDepositStatus() != 1) {
+               failNum ++;
+            }
+        }
+
+        if (failNum > 0) {
+            Intent intent = new Intent(context, SubmitFailIntentService.class);
+            intent.putExtra("SubmitInvoiceInfo", "");
+            context.startService(intent);
+        }
+    }
+
+    /**
+     * 网址访问
+     * @return urlDate 对象网址时间
+     */
+    public static String checkTimeByUrl(Context context){
+        try {
+            new Thread(new Runnable(){
+                @Override
+                public void run() {
+                    try {
+                        // 在这里进行 http request.网络请求相关操作
+                        URL url1 = new URL("https://www.baidu.com");
+                        URLConnection conn = url1.openConnection();  //生成连接对象
+                        conn.connect();  //连接对象网页
+                        Date date = new Date(conn.getDate());  //获取对象网址时间
+                        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");  //设置日期格式
+                        String urlDate = df.format(date);
+                        Log.d("测试","当前时间：" + urlDate);
+                        long minDiff = calculateMinutesDiff(urlDate);
+                        if (minDiff != -99999) {
+                            if (minDiff > 15) {
+                                //SystemClock.setCurrentTimeMillis(date.getTime());
+                                //execSuCmd("date " + date.getTime() + "\n busybox hwclock -w\n");
+                                Settings.Global.putInt(context.getContentResolver(), Settings.Global.AUTO_TIME, 1);
+                            }
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }).start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "urlDate";
+    }
+
+    /**
+     * 执行Android命令
+     * @param cmd  命令
+     */
+    private static void execSuCmd(String cmd) {
+        Process process = null;
+        DataOutputStream os = null;
+        DataInputStream is = null;
+        try {
+            process = Runtime.getRuntime().exec("su");
+            os = new DataOutputStream(process.getOutputStream());
+            os.writeBytes(cmd + "\n");
+            os.writeBytes("exit\n");
+            os.flush();
+            int aa = process.waitFor();
+            is = new DataInputStream(process.getInputStream());
+            byte[] buffer = new byte[is.available()];
+            is.read(buffer);
+            String out = new String(buffer);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (os != null) {
+                    os.close();
+                }
+                if (is != null) {
+                    is.close();
+                }
+                if (process != null){
+                    process.destroy();
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

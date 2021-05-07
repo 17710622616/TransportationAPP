@@ -48,6 +48,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -104,7 +105,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                 //mList.addAll(cacheList);
             }
             mCloseAccountHistoryAdapter.notifyDataSetChanged();
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -145,7 +146,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                             }
                         }
                     }
-                } catch (DbException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
@@ -182,7 +183,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                         }
                         TMSApplication.db.update(TrainsInfo.class, b, name);
                         Toast.makeText(CloseAccountHistoryActivity.this, commonModel.getMessage() + ",提交結算成功！", Toast.LENGTH_SHORT).show();
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 } else {
@@ -196,7 +197,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                             name = new KeyValue("today_refund_status", 2);
                         }
                         TMSApplication.db.update(TrainsInfo.class, b, name);
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -214,7 +215,7 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                         name = new KeyValue("today_refund_status", 2);
                     }
                     TMSApplication.db.update(TrainsInfo.class, b, name);
-                } catch (DbException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 if (ex instanceof java.net.SocketTimeoutException) {

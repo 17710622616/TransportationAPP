@@ -85,6 +85,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -145,7 +146,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                 deliverInvoiceModel.setRecycleNum(model.getMaterialRefundNum());
                 mDeliverInvoiceModelList.add(deliverInvoiceModel);
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -328,7 +329,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
             try {
                 TMSApplication.db.update(TrainsInfo.class, WhereBuilder.b().and("trains_times", "=", maxTimes), new KeyValue("today_refund_body", new Gson().toJson(movementRefundModel)));
                 TMSApplication.db.update(TrainsInfo.class, WhereBuilder.b().and("trains_times", "=", maxTimes), new KeyValue("today_deposit_body", new Gson().toJson(movementDepositModel)));
-            } catch (DbException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             // 更新最新车次的物料表状态
@@ -469,7 +470,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                     }
                 }
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -504,7 +505,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                             name = new KeyValue("today_refund_status", 1);
                         }
                         TMSApplication.db.update(TrainsInfo.class, b, name);
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 } else {
@@ -518,7 +519,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                             name = new KeyValue("today_refund_status", 2);
                         }
                         TMSApplication.db.update(TrainsInfo.class, b, name);
-                    } catch (DbException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -536,7 +537,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                         name = new KeyValue("today_refund_status", 2);
                     }
                     TMSApplication.db.update(TrainsInfo.class, b, name);
-                } catch (DbException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 if (ex instanceof java.net.SocketTimeoutException) {
@@ -570,7 +571,7 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                     returnMaterialList.add(correspondingMaterial.getMaterialID().trim());
                 }
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

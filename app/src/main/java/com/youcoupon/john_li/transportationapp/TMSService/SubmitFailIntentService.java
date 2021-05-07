@@ -2,14 +2,19 @@ package com.youcoupon.john_li.transportationapp.TMSService;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.os.Environment;
+import android.os.Handler;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.youcoupon.john_li.transportationapp.TMSActivity.DeliverGoodsActivity;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.SubmitInvoiceInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CommonModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.DeliverInvoiceModel;
 import com.youcoupon.john_li.transportationapp.TMSModel.PostInvoiceModel;
+import com.youcoupon.john_li.transportationapp.TMSUtils.SpuUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSConfigor;
@@ -23,6 +28,7 @@ import org.xutils.ex.DbException;
 import org.xutils.http.RequestParams;
 import org.xutils.x;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,7 +43,7 @@ import java.util.Map;
 public class SubmitFailIntentService extends IntentService
 {
     private static final String ACTION_UPLOAD_IMG = "com.youcoupon.john_li.transportationapp.action.UPLOAD_FIAL_INVOICE";
-    private SubmitInvoiceInfo mSubmitInvoiceInfo;
+    //private SubmitInvoiceInfo mSubmitInvoiceInfo;
 
     public SubmitFailIntentService()
     {
@@ -45,12 +51,81 @@ public class SubmitFailIntentService extends IntentService
     }
 
     @Override
-    protected void onHandleIntent(Intent intent)
-    {
-        if (intent != null)
-        {
-            mSubmitInvoiceInfo = new Gson().fromJson(intent.getStringExtra("SubmitInvoiceInfo"), SubmitInvoiceInfo.class);
-            checkInvoiceType();
+    protected void onHandleIntent(Intent intent) {
+        /*if (intent != null) {
+            SubmitInvoiceInfo mSubmitInvoiceInfo = new Gson().fromJson(intent.getStringExtra("SubmitInvoiceInfo"), SubmitInvoiceInfo.class);
+            List<SubmitInvoiceInfo> list = new ArrayList<>();
+            List<SubmitInvoiceInfo> all = null;
+            try {
+                all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
+                if (all != null) {
+                    if (all.size() > 0) {
+                        for (SubmitInvoiceInfo info : all) {
+                            list.add(info);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            }
+
+            for (SubmitInvoiceInfo info : list) {
+                checkInvoiceType(info);
+            }
+        }*/
+
+        //List<SubmitInvoiceInfo> all = null;
+        try {
+            List<SubmitInvoiceInfo> list = new ArrayList<>();
+            List<SubmitInvoiceInfo> all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
+            if (all != null) {
+                if (all.size() > 0) {
+                    list.addAll(all);
+
+                    // 遍历订单表
+                    for (SubmitInvoiceInfo info : list) {
+                        int depositNum = 0;
+                        int refundNum = 0;
+                        List<DeliverInvoiceModel> mDeliverInvoiceModelList = new Gson().fromJson(info.getOrderBody(), new TypeToken<List<DeliverInvoiceModel>>() {}.getType());
+                        for (DeliverInvoiceModel model : mDeliverInvoiceModelList) {
+                            depositNum += model.getSendOutNum();
+                            refundNum += model.getRecycleNum();
+                        }
+
+                        // 存在提交失败订单重新提交
+                        if (info.getRefundStatus() != 1) {
+                            if (refundNum > 0) {
+                                invoiceResult = invoiceResult + 1;
+                                submitTimes ++;
+                                callNetSubmitInvoice(mDeliverInvoiceModelList, depositNum, refundNum, 1, info);
+                            } else {
+                                try {
+                                    TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",info.getRefrence()),new KeyValue("refundStatus", 1));
+                                } catch (DbException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+
+                        if (info.getDepositStatus() != 1) {
+                            if (depositNum > 0) {
+                                invoiceResult = invoiceResult + 1;
+                                submitTimes ++;
+                                callNetSubmitInvoice(mDeliverInvoiceModelList, depositNum, refundNum, 0, info);
+                            } else {
+                                try {
+                                    TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",info.getRefrence()),new KeyValue("depositStatus", 1));
+                                } catch (DbException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            Toast.makeText(this, "訂單查詢失敗！", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -60,7 +135,7 @@ public class SubmitFailIntentService extends IntentService
     /**
      * 检查发票类型
      */
-    private void checkInvoiceType() {
+    private void checkInvoiceType(SubmitInvoiceInfo mSubmitInvoiceInfo) {
         int depositNum = 0;
         int refundNum = 0;
         List<DeliverInvoiceModel> mDeliverInvoiceModelList = new Gson().fromJson(mSubmitInvoiceInfo.getOrderBody(), new TypeToken<List<DeliverInvoiceModel>>() {}.getType());
@@ -72,7 +147,7 @@ public class SubmitFailIntentService extends IntentService
         if (refundNum > 0) {
             invoiceResult = invoiceResult + 1;
             submitTimes ++;
-            callNetSubmitInvoice(mDeliverInvoiceModelList, depositNum, refundNum, 1);
+            callNetSubmitInvoice(mDeliverInvoiceModelList, depositNum, refundNum, 1, mSubmitInvoiceInfo);
         } else {
             try {
                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
@@ -84,7 +159,7 @@ public class SubmitFailIntentService extends IntentService
         if (depositNum > 0) {
             invoiceResult = invoiceResult + 1;
             submitTimes ++;
-            callNetSubmitInvoice(mDeliverInvoiceModelList, depositNum, refundNum, 0);
+            callNetSubmitInvoice(mDeliverInvoiceModelList, depositNum, refundNum, 0, mSubmitInvoiceInfo);
         } else {
             try {
                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
@@ -101,7 +176,7 @@ public class SubmitFailIntentService extends IntentService
      * @param refundNum
      * @param type 0: deposit送出，1:refund回收
      */
-    private void callNetSubmitInvoice(List<DeliverInvoiceModel> mDeliverInvoiceModelList, final int depositNum, final int refundNum, final int type) {
+    private void callNetSubmitInvoice(List<DeliverInvoiceModel> mDeliverInvoiceModelList, final int depositNum, final int refundNum, final int type, SubmitInvoiceInfo mSubmitInvoiceInfo) {
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("corp", TMSCommonUtils.getUserFor40(this).getCorp());
         paramsMap.put("userid", TMSCommonUtils.getUserFor40(this).getID());
@@ -115,12 +190,15 @@ public class SubmitFailIntentService extends IntentService
         } else {
             // 当为发票类型为回收物料时，判断送出物料是否为0，不为0则以送出物料为主单不修改发票号码(即不处理订单号码以送出单的编码为发票编码)，当送出物料数量为0时以回收物料为主单直接修以回收物料发票编码为发票编码)
             if (depositNum == 0) {
+                // 主单
                 header.setReference(mSubmitInvoiceInfo.getRefrence());
             } else {
-                String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
-                time = time.replace(":","");
-                time = time.replace(" ","");
-                header.setReference(TMSShareInfo.IMEI + time);
+                // 子单
+                //String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                //time = time.replace(":","");
+                //time = time.replace(" ","");
+                //header.setReference(TMSShareInfo.IMEI + time);
+                header.setReference(mSubmitInvoiceInfo.getRefrence() + "S");
             }
         }
         header.setSalesmanID(TMSCommonUtils.getUserFor40(this).getDriverID());
@@ -228,6 +306,22 @@ public class SubmitFailIntentService extends IntentService
                 } else {
                     Toast.makeText(SubmitFailIntentService.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
                 }
+
+                /*try {
+                    // 计数重新提交队列不可超过5条
+                    int failNum = (int) SpuUtils.get(SubmitFailIntentService.this, "failNum", 0);
+                    if (failNum < 5) {
+                        // 提交發票失敗時重新遞交
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                TMSCommonUtils.resubmitFailOrder(SubmitFailIntentService.this);
+                            }
+                        }, 10 * 1000);
+                    }
+                } catch (Exception exc) {
+                    exc.printStackTrace();
+                }*/
             }
 
             @Override
@@ -247,6 +341,14 @@ public class SubmitFailIntentService extends IntentService
                     Toast.makeText(SubmitFailIntentService.this, e.getStackTrace().toString(), Toast.LENGTH_SHORT).show();
                 }
                 EventBus.getDefault().post("SUBMIT_FAIL_INVOICE");
+
+                try {
+                    // 计数重新提交队列不可超过5条
+                    int failNum = (int) SpuUtils.get(SubmitFailIntentService.this, "failNum", 0);
+                    SpuUtils.put(SubmitFailIntentService.this, "failNum", failNum-1);
+                } catch (Exception exc) {
+                    exc.printStackTrace();
+                }
             }
         });
     }

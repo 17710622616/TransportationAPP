@@ -23,6 +23,7 @@ import com.youcoupon.john_li.transportationapp.TMSAdapter.TrainsAnalysisAdapter;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.CarSplitInvoiceDetialInfo;
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.TrainsAnalysisInfo;
 import com.youcoupon.john_li.transportationapp.TMSModel.CarSplitInvoiceVM;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class TrainsAnalysisActivity extends BaseActivity implements View.OnClick
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override

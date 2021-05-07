@@ -92,6 +92,7 @@ public class CarSplitActivity extends BaseActivity implements View.OnClickListen
             initView();
             setListener();
             initData();
+            TMSCommonUtils.checkTimeByUrl(this);
         } catch (Exception e) {
             doCheckOut();
             TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "分车全局异常：\n" + e.getMessage(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor.txt");

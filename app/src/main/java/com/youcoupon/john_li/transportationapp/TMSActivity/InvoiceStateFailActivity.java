@@ -10,6 +10,7 @@ import com.youcoupon.john_li.transportationapp.TMSAdapter.InvoiceStateListAdapte
 import com.youcoupon.john_li.transportationapp.TMSDBInfo.InvoiceStateInfo;
 import com.youcoupon.john_li.transportationapp.TMSService.SubmitFailIntentStateService;
 import com.youcoupon.john_li.transportationapp.TMSUtils.TMSApplication;
+import com.youcoupon.john_li.transportationapp.TMSUtils.TMSCommonUtils;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
 import org.xutils.ex.DbException;
@@ -35,6 +36,7 @@ public class  InvoiceStateFailActivity extends BaseActivity implements View.OnCl
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
     @Override
@@ -61,7 +63,7 @@ public class  InvoiceStateFailActivity extends BaseActivity implements View.OnCl
             if (all != null) {
                 recordList.addAll(all);
             }
-        } catch (DbException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -85,7 +87,7 @@ public class  InvoiceStateFailActivity extends BaseActivity implements View.OnCl
                         intent.putExtra("reason", " ");
                         startService(intent);
                     }
-                } catch (DbException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 

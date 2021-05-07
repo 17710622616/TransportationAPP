@@ -33,7 +33,6 @@ import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
 import org.xutils.common.util.KeyValue;
 import org.xutils.db.sqlite.WhereBuilder;
-import org.xutils.ex.DbException;
 
 import java.util.List;
 
@@ -58,6 +57,7 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
         initView();
         setListener();
         initData();
+        TMSCommonUtils.checkTimeByUrl(this);
     }
 
 
@@ -305,7 +305,7 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
                                     intent.putExtra("invoiceStateBillNo", invoiceNo);
                                     intent.putExtra("reason", reason);
                                     startService(intent);
-                                } catch (DbException e) {
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                     Toast.makeText(InvoiceStateActivity.this, "發票狀態保存錯誤！", Toast.LENGTH_SHORT).show();
                                 }
@@ -536,7 +536,7 @@ public class InvoiceStateActivity extends BaseActivity implements View.OnClickLi
                                 intent.putExtra("invoiceStateBillNo", invoiceNo);
                                 intent.putExtra("reason", " ");
                                 startService(intent);
-                            } catch (DbException e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
                                 Toast.makeText(InvoiceStateActivity.this, "發票狀態保存錯誤！", Toast.LENGTH_SHORT).show();
                             }

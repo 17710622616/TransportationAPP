@@ -8,9 +8,9 @@ package com.youcoupon.john_li.transportationapp.TMSUtils;
 public class TMSConfigor {
     // 測試url
     //public final static String BASE_URL = "http://202.100.100.151/";
-    //public final static String BASE_URL = "http://202.100.100.33:10090/";
+    public final static String BASE_URL = "http://202.100.100.33:10090/";
     // 正式url
-    public final static String BASE_URL = "http://psamaterial.moccb.com/";
+    //public final static String BASE_URL = "http://psamaterial.moccb.com/";
     // 登錄接口
     public final static String LOGIN_API = "api/Tools/CheckUser?";
     // 登出接口

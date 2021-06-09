@@ -192,14 +192,13 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
             webview.setWebViewClient(new MvtFlashWebViewClient());
             webview.setDrawingCacheEnabled(true);
             settings.setLoadWithOverviewMode(true);
-            if (mSubmitInvoiceInfo.getInvoiceNo() != null) {
+            // 2021-06-01之前的打印主单及子单的逻辑
+            /*if (mSubmitInvoiceInfo.getInvoiceNo() != null) {
                 url = "file:///" + testCreateHTML(TMSCommonUtils.saveBitmap(TMSCommonUtils.creatBarcode(this, TMSCommonUtils.ean8(mSubmitInvoiceInfo.getInvoiceNo()), 160, 60, false)), true);
             } else {
                 url = "file:///" + testCreateHTML("", true);
-            }
-            webview.loadUrl(url);
-            mViewList.add(webview);
-            if (mSubmitInvoiceInfo.getSunRefrence() != null) {
+            }*/
+            /*if (mSubmitInvoiceInfo.getSunRefrence() != null) {
                 nextPageIv.setVisibility(View.VISIBLE);
                 sunWebview = new WebView(this);
                 WebSettings sunSettings = sunWebview.getSettings();
@@ -221,7 +220,12 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 }
                 sunWebview.loadUrl(sunUrl);
                 mViewList.add(sunWebview);
-            }
+            }*/
+            // 2021-06-01会议后修改单据格式，仅打印一张客戶物料回收單
+            url = "file:///" + testCreateHTML("", true);
+            webview.loadUrl(url);
+            mViewList.add(webview);
+
             mAdapter = new OrderDetialPageAdapter(mViewList);
             mVp.setAdapter(mAdapter);
             mVp.setCurrentItem(0);
@@ -276,6 +280,35 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
         }
     }
 
+    /**
+     * 有仅一张客戶物料回收單时创建网页
+     * @return
+     */
+    public String testCreateHTML() {
+        List<DeliverInvoiceModel> mDeliverInvoiceModelList = new Gson().fromJson(mSubmitInvoiceInfo.getOrderBody(), new TypeToken<List<DeliverInvoiceModel>>() {}.getType());
+        List<CustomerInfo> all = null;
+        String customerName = "";
+        try {
+            all = TMSApplication.db.selector(CustomerInfo.class).where("customerID","=",mSubmitInvoiceInfo.getCustomerID()).findAll();
+            for(CustomerInfo customerInfo : all)      {
+                customerName = customerInfo.getCustomerName();
+            }
+        } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.testCreateHTML():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            e.printStackTrace();
+        }
+        String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
+        ToHtml.convertOneSheet(mSubmitInvoiceInfo.getInvoiceNo(), mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, this);
+        //ToHtml.convert(mSubmitInvoiceInfo.getInvoiceNo(),mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this);
+        return path;
+    }
+
+    /**
+     * 有主单及子单时创建网页
+     * @param barCodeImagePath
+     * @param isMother
+     * @return
+     */
     public String testCreateHTML(String barCodeImagePath, boolean isMother) {
         List<DeliverInvoiceModel> mDeliverInvoiceModelList = new Gson().fromJson(mSubmitInvoiceInfo.getOrderBody(), new TypeToken<List<DeliverInvoiceModel>>() {}.getType());
         List<CustomerInfo> all = null;

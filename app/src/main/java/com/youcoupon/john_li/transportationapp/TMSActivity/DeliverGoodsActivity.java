@@ -79,6 +79,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
     private LinearLayout invoiceLL;
     private NoScrollListView mLv;
     private ProgressDialog dialog;
+    private boolean isByCustomer = false;
 
     // 物料订单的数据库类
     private SubmitInvoiceInfo mSubmitInvoiceInfo;
@@ -268,16 +269,22 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 if (b) {
                     try {
                         // 物料送出/回收记录
+                        String reference = TMSShareInfo.IMEI + time;
+                        if (isByCustomer) {
+                            reference = "N" + reference;
+                        }
+
                         mSubmitInvoiceInfo.setOrderBody(new Gson().toJson(mDeliverInvoiceModelList));
                         String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
                         time = time.replace(":","");
                         time = time.replace(" ","");
-                        mSubmitInvoiceInfo.setRefrence(TMSShareInfo.IMEI + time);
+                        mSubmitInvoiceInfo.setRefrence(reference);
                         mSubmitInvoiceInfo.setSalesmanId(TMSCommonUtils.getUserFor40(this).getSalesmanID());
                         mSubmitInvoiceInfo.setDepositStatus(0);
                         mSubmitInvoiceInfo.setRefundStatus(0);
                         TMSApplication.db.save(mSubmitInvoiceInfo);
-                        checkInvoiceType(TMSShareInfo.IMEI + time);
+
+                        checkInvoiceType(reference);
 
                         TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "提交物料回收：" + TMSCommonUtils.getTimeNow() + "\n" + new Gson().toJson(mSubmitInvoiceInfo), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Event.txt");
                     } catch (Exception e) {
@@ -661,15 +668,24 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             if(intent.getAction().equals(BARCODE_ACTION)) {
                 String str = intent.getStringExtra("BARCODE");
                 try {
+                    // 判断是否为客户条码纸
+                    if ("N".equals(str.subSequence(0, 1))) {
+                        isByCustomer = true;
+                    } else {
+                        isByCustomer = false;
+                    }
+
                     //str = str.substring(str.length() - 8, str.length());
+                    // 过滤掉字母
                     str = str.replaceAll("[a-zA-Z]","");
                     if (str.length() < 9) {
                         if (str.length() > 7) {
+                            // 获取客户条码
                             str = str.substring(0, str.length() - 1);
                         }
                     }
                 } catch (Exception e) {
-
+                    e.printStackTrace();
                 }
 
                 if (!"".equals(str)) {

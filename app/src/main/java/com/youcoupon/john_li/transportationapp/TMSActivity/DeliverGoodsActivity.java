@@ -50,6 +50,7 @@ import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 import com.youcoupon.john_li.transportationapp.TMSView.NoScrollListView;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xutils.common.Callback;
@@ -269,15 +270,20 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 if (b) {
                     try {
                         // 物料送出/回收记录
+                        String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
+                        time = time.replace(":","");
+                        time = time.replace(" ","");
                         String reference = TMSShareInfo.IMEI + time;
                         if (isByCustomer) {
                             reference = "N" + reference;
                         }
 
+                        if (mInvoiceNo != null) {
+                            if (mInvoiceNo != "") {
+                                mSubmitInvoiceInfo.setLinkInvoice(mInvoiceNo);
+                            }
+                        }
                         mSubmitInvoiceInfo.setOrderBody(new Gson().toJson(mDeliverInvoiceModelList));
-                        String time = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()).replace("-","");
-                        time = time.replace(":","");
-                        time = time.replace(" ","");
                         mSubmitInvoiceInfo.setRefrence(reference);
                         mSubmitInvoiceInfo.setSalesmanId(TMSCommonUtils.getUserFor40(this).getSalesmanID());
                         mSubmitInvoiceInfo.setDepositStatus(0);
@@ -286,7 +292,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
 
                         checkInvoiceType(reference);
 
-                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "提交物料回收：" + TMSCommonUtils.getTimeNow() + "\n" + new Gson().toJson(mSubmitInvoiceInfo), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Event.txt");
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "提交物料回收：" + TMSCommonUtils.getTimeNow() + "\n" + new Gson().toJson(mSubmitInvoiceInfo), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "/Event.txt");
                     } catch (Exception e) {
                         e.printStackTrace();
                         dialog.dismiss();
@@ -493,7 +499,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                             // 修改发票送出物料状态
                             //TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 1));
                         } catch (Exception e) {
-                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码1：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "修改发票号码1：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     } else {
@@ -502,14 +508,14 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                             try {
                                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("invoice_no", orderNo));
                             } catch (Exception e) {
-                                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码2：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "修改发票号码2：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                                 e.printStackTrace();
                             }
                         } else {
                             try {
                                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("sun_invoice_no", orderNo));
                             } catch (Exception e) {
-                                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码3：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "修改发票号码3：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                                 e.printStackTrace();
                             }
                         }
@@ -517,7 +523,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 1));
                         } catch (Exception e) {
-                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码4：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "修改发票号码4：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     }
@@ -527,21 +533,21 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 2));
                         } catch (Exception e) {
-                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码5：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "錯誤信息，修改发票号码5：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     } else {
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 2));
                         } catch (Exception e) {
-                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码6：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "錯誤信息，修改发票号码6：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     }
                     Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！" + data, Toast.LENGTH_SHORT).show();
                 }
 
-                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "錯誤信息，提交發票返回異常9：\n" + new Gson().toJson(commonModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "提交成功，提交發票返回信息9：\n" + new Gson().toJson(commonModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             }
 
             @Override
@@ -550,14 +556,14 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     try {
                         TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("depositStatus", 2));
                     } catch (Exception e) {
-                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码7：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码7：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                         e.printStackTrace();
                     }
                 } else {
                     try {
                         TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",reference),new KeyValue("refundStatus", 2));
                     } catch (Exception e) {
-                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码8：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码8：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                         e.printStackTrace();
                     }
                 }
@@ -567,7 +573,7 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                     Toast.makeText(DeliverGoodsActivity.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
                 }
 
-                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，提交發票返回異常9：" + ex.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，提交發票返回異常9：" + ex.getMessage() + "\n" +ex.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
 
                 doReTry();
             }
@@ -600,6 +606,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
                 } catch (Exception exc) {
                     exc.printStackTrace();
                 }
+
+                EventBus.getDefault().post("REFRESH_BUSINESS");
             }
 
         });
@@ -745,11 +753,13 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
         }
     }
 
+    private String mInvoiceNo = "";
     /**
      * 有brcode
      * @param code
      */
     private void IshavaInvoiceCode(Barcodemode code) {
+        mInvoiceNo = "";
         //添加查询条件进行查询
         try {
             List<InvoiceInfo> all = TMSApplication.db.selector(InvoiceInfo.class).where("invoice_no","=", code.getBarcode()).findAll();
@@ -761,7 +771,8 @@ public class DeliverGoodsActivity extends BaseActivity implements View.OnClickLi
             }
 
             if (invoiceInfo != null) {
-                TMSCommonUtils.checkHasDone(invoiceInfo.getCustomerID(), this);
+                mInvoiceNo = invoiceInfo.getInvoiceNo();
+                TMSCommonUtils.checkHasDone(mInvoiceNo, this);
 
                 invoiceLL.setVisibility(View.VISIBLE);
                 scanInvoiceTv.setText(invoiceInfo.getInvoiceNo());

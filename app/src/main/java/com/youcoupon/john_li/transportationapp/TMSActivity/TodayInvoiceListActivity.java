@@ -126,7 +126,7 @@ public class TodayInvoiceListActivity extends BaseActivity implements View.OnCli
                 Toast.makeText(this, "暫無今日訂單！", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + TMSCommonUtils.getStackMsg(e), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             Toast.makeText(this, "訂單查詢失敗！", Toast.LENGTH_SHORT).show();
         }
     }

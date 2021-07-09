@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Picture;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.StrictMode;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -41,6 +42,7 @@ import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 import com.youcoupon.john_li.transportationapp.TMSUtils.ToHtml;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xutils.common.Callback;
@@ -545,6 +547,8 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
                 } else {
                     Toast.makeText(CloseAccountActivity.this, "提交結算失敗！", Toast.LENGTH_SHORT).show();
                 }
+
+                doReTry();
             }
 
             @Override
@@ -554,9 +558,41 @@ public class CloseAccountActivity extends BaseActivity implements View.OnClickLi
 
             @Override
             public void onFinished() {
-
+                EventBus.getDefault().post("REFRESH_BUSINESS");
             }
         });
+    }
+
+    //重新提交的处理：
+    private Handler mHandler;
+    private List<Runnable> retryList = new ArrayList<>();
+    private int time = 3;
+    int invoiceResult;
+    int submitTimes;
+
+    private void doReTry() {
+        // 提交發票失敗時重新遞交
+        try {
+            // 提交發票失敗時重新遞交
+            mHandler = new Handler();
+            Runnable retryThred = new Runnable() {
+                @Override
+                public void run() {
+                    time --;
+                    if(time > 0) {
+                        mHandler.postDelayed(this, 45 * 1000);
+                        TMSCommonUtils.resubmitFailStock(CloseAccountActivity.this);
+                    } else {
+                        mHandler.removeCallbacks(this);
+                    }
+
+                    retryList.add(this);
+                }
+            };
+            mHandler.postDelayed(retryThred, 30 * 1000);
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
     }
 
     private List<String> getHasResponseMatrialList() {

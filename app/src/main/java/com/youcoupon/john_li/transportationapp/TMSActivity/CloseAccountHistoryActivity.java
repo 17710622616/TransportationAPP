@@ -1,6 +1,7 @@
 package com.youcoupon.john_li.transportationapp.TMSActivity;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -117,6 +118,13 @@ public class CloseAccountHistoryActivity extends BaseActivity implements View.On
                 finish();
                 break;
             case R.id.head_right_tv:
+                headView.setRightTextUnable();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        headView.setRightTextEnable();
+                    }
+                }, 5000);
                 try {
                     List<TrainsInfo> all = TMSApplication.db.selector(TrainsInfo.class).findAll();
                     for (TrainsInfo trainsInfo : all) {

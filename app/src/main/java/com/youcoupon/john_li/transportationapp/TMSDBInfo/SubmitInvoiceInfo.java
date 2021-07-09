@@ -28,6 +28,8 @@ public class SubmitInvoiceInfo {
     private String InvoiceNo;
     @Column(name = "salesman_id")
     private String SalesmanId;
+    @Column(name = "link_invoice")
+    private String LinkInvoice;
     @Column(name = "order_body")
     private String OrderBody;
     @Column(name="sun_invoice_no")
@@ -40,6 +42,14 @@ public class SubmitInvoiceInfo {
     private int refundStatus;
     @Column(name = "refrence")
     private String Refrence;
+
+    public String getLinkInvoice() {
+        return LinkInvoice;
+    }
+
+    public void setLinkInvoice(String linkInvoice) {
+        LinkInvoice = linkInvoice;
+    }
 
     public String getSunInvoiceNo() {
         return SunInvoiceNo;

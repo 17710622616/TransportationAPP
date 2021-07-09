@@ -40,7 +40,7 @@ public class IToast {
         title.setText(massage);
         Toast toast = new Toast(context);
         //设置Toast要显示的位置，水平居中并在底部，X轴偏移0个单位，Y轴偏移70个单位，
-        toast.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER, 0, 70);
+        toast.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 100);
         //设置显示时间
         toast.setDuration(show_length);
 

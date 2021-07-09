@@ -40,7 +40,9 @@ public class ToHtml {
 
     // 仅一张客户物料回收单的时候
     private static final String mOneResult1 = "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />  <title>澳門可口可樂飲料有限公司</title>  </head>  <body>    <p> </p>    <table width=\"360\" height=\"46\" frame =\"void\">      <tr>         <td style=\"text-align: center;\">          <font size=\"6\">            <strong>客戶物料回收單</strong><br/>          </font>        </td>      </tr>     </table>    <table width=\"360\" height=\"46\" frame=\"void\" style=\"word-break:break-all; word-wrap:break-all;\">      <tr>        <td align=\"center\">          <font size=\"5\">            <strong>澳門可口可樂飲料有限公司</strong>          </font>        </td>       </tr>      <tr>        <td algin=\"left\">          <font size=\"5\">Reference：";
-    private static final String mOneResult2 = ("</font></td> </tr>  <tr><td algin=\"left\"><font size=\"5\">日&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;期：" + TMSCommonUtils.getTimeToday() + "</font></td> </tr> </table>     <table width=\"360\" height=\"46\" frame=\"void\">      <tr>        <td>          <font size=\"5\">收入客戶：</font>        </td>       </tr>      <tr>        <td height=\"46\">          <font size=\"5\">物料</font>        </td>          <td align=\"center\">          <font size=\"5\">數量</font>        </td>       </tr>    </table>            <table width=\"360\" height=\"46\" frame=\"void\">      <tr>        <td>          <font size=\"5\"><br/>送至客戶：</font>        </td>       </tr>      <tr>        <td height=\"46\">          <font size=\"5\">物料</font>        </td>          <td align=\"center\">          <font size=\"5\">數量</font>        </td>       </tr>");
+    private static final String mOneResult2 = ("</font></td> </tr>  <tr><td algin=\"left\"><font size=\"5\">日&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;期：" + TMSCommonUtils.getTimeToday() + "</font></td> </tr> </table>     ");
+    private static final String mOneResult4 = "<table width=\"360\" height=\"46\" frame=\"void\">      <tr>        <td>          <font size=\"5\"><br/>收回客戶：</font>        </td>       </tr>      <tr>        <td height=\"46\">          <font size=\"5\">物料</font>        </td>          <td align=\"center\">          <font size=\"5\">數量</font>        </td>       </tr>    ";
+    private static final String mOneResult3 = "<table width=\"360\" height=\"46\" frame=\"void\">      <tr>        <td>          <font size=\"5\"><br/>送至客戶：</font>        </td>       </tr>      <tr>        <td height=\"46\">          <font size=\"5\">物料</font>        </td>          <td align=\"center\">          <font size=\"5\">數量</font>        </td>       </tr>";
 
     public static void convert(String invoiceNo, String reference, String customerID, String customerName, String path, List<DeliverInvoiceModel> list, String barCodeImagePath, Context context, boolean isMother) {//, String name[], int sendOut[], int recycle[]
         try {
@@ -127,7 +129,6 @@ public class ToHtml {
 
     /**
      * 有仅一张客戶物料回收單时创建网页
-     * @param invoiceNo
      * @param refrence
      * @param customerID
      * @param customerName
@@ -135,7 +136,7 @@ public class ToHtml {
      * @param list
      * @param context
      */
-    public static void convertOneSheet(String invoiceNo, String refrence, String customerID, String customerName, String path, List<DeliverInvoiceModel> list, Context context) {
+    public static void convertOneSheet(String refrence, String customerID, String customerName, String path, List<DeliverInvoiceModel> list, Context context) {
         try {
             String result;
             String headResult;
@@ -156,22 +157,25 @@ public class ToHtml {
                     return;
                 }
             }
-            result = mOneResult1 + refrence + mHtmlHead3 + customerID + mHtmlHead4 + customerName + mHtmlHead5 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHead6 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mOneResult2;
-            if (totalDepositNum <= 0) {
+            result = mOneResult1 + refrence +  mHtmlHead3 + customerID + mHtmlHead4 + customerName + mHtmlHead5 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mHtmlHead6 + TMSCommonUtils.getUserFor40(context).getNameChinese() + mOneResult2;
+            if (totalDepositNum > 0) {
+                result = result + mOneResult3;
                 for (int i2 = 0; i2 < list.size(); i2++) {
                     if (((DeliverInvoiceModel) list.get(i2)).getSendOutNum() > 0) {
-                        result3 = result3 + new String(mDepositHtmlItem).replace("name", ((DeliverInvoiceModel) list.get(i2)).getMaterialName()).replace("sendOut", "" + ((DeliverInvoiceModel) list.get(i2)).getSendOutNum());
+                        result = result + new String(mDepositHtmlItem).replace("name", ((DeliverInvoiceModel) list.get(i2)).getMaterialName()).replace("sendOut", "" + ((DeliverInvoiceModel) list.get(i2)).getSendOutNum());
                     }
                 }
-            } else if (totalRefundNum <= 0) {
+            }
+            if (totalRefundNum > 0) {
+                result = result + mOneResult4;
                 for (int i3 = 0; i3 < list.size(); i3++) {
                     if (((DeliverInvoiceModel) list.get(i3)).getRecycleNum() > 0) {
-                        result3 = result3 + new String(mRefundHtmlItem).replace("name", ((DeliverInvoiceModel) list.get(i3)).getMaterialName()).replace("recycle", "" + ((DeliverInvoiceModel) list.get(i3)).getRecycleNum());
+                        result = result + new String(mRefundHtmlItem).replace("name", ((DeliverInvoiceModel) list.get(i3)).getMaterialName()).replace("recycle", "" + ((DeliverInvoiceModel) list.get(i3)).getRecycleNum());
                     }
                 }
             }
 
-            saveStringToFile(path, result3 + mHtmlEnd);
+            saveStringToFile(path, result + mHtmlEnd);
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

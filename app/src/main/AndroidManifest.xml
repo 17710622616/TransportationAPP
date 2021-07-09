@@ -65,6 +65,7 @@
 
         <service android:name=".TMSService.SubmitFailIntentService"/>
         <service android:name=".TMSService.SubmitFailIntentStateService"/>
+        <service android:name=".TMSService.SubmitFailStockIntentService"/>
         <service android:name=".TMSService.PostPhotoService"/>
         <service android:name=".TMSService.TimingPositionService"
             android:enabled="true"

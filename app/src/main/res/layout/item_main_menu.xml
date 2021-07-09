@@ -27,5 +27,17 @@
             android:scaleType="fitXY"
             android:layout_alignParentRight="true"
             android:layout_margin="5dp"/>
+
+        <TextView
+            android:id="@+id/item_main_fail_tv"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/shape_main_fail"
+            android:gravity="center"
+            android:text="0"
+            android:textColor="@color/color_black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_alignParentRight="true"/>
     </RelativeLayout>
 </LinearLayout>

@@ -54,6 +54,7 @@ import com.youcoupon.john_li.transportationapp.TMSModel.CarSplitInvoiceVM;
 import com.youcoupon.john_li.transportationapp.TMSModel.GPS;
 import com.youcoupon.john_li.transportationapp.TMSModel.UserModel;
 import com.youcoupon.john_li.transportationapp.TMSService.SubmitFailIntentService;
+import com.youcoupon.john_li.transportationapp.TMSService.SubmitFailStockIntentService;
 import com.youcoupon.john_li.transportationapp.TMSView.IToast;
 
 import org.xutils.common.Callback;
@@ -941,18 +942,18 @@ public class TMSCommonUtils {
 
     /**
      * 检查发票是否已做过物料回收
-     * @param customerID
+     * @param invoiceNo
      * @param context
      */
-    public static void checkHasDone(String customerID, Context context) {
+    public static void checkHasDone(String invoiceNo, Context context) {
         try {
-            List<SubmitInvoiceInfo> invoiceInfos = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("customer_id","==",customerID).findAll();
+            List<SubmitInvoiceInfo> invoiceInfos = TMSApplication.db.selector(SubmitInvoiceInfo.class).where("link_invoice","=",invoiceNo).findAll();
             if (invoiceInfos.size() > 0) {
                 /*Toast toast = Toast.makeText(context.getApplicationContext(), "該客戶已提交過物料回收請確認！", Toast.LENGTH_LONG);
                 toast.setGravity(0,0,0);
                 toast.show();*/
                 IToast toast = new IToast();
-                toast.show("該客戶已提交過物料回收請注意！", Toast.LENGTH_LONG, context);
+                toast.show("該發票已提交過物料回收請注意！", Toast.LENGTH_LONG, context);
             }
         } catch (DbException dbe) {
             dbe.printStackTrace();
@@ -963,7 +964,6 @@ public class TMSCommonUtils {
 
     /**
      * 重新提交失败订单
-     *
      * @param context
      */
     public static void resubmitFailOrder(Context context) {
@@ -985,7 +985,7 @@ public class TMSCommonUtils {
         int failNum = 0;
         for (SubmitInvoiceInfo info : list) {
             if (info.getRefundStatus() != 1 || info.getDepositStatus() != 1) {
-               failNum ++;
+                failNum ++;
             }
         }
 
@@ -994,6 +994,98 @@ public class TMSCommonUtils {
             intent.putExtra("SubmitInvoiceInfo", "");
             context.startService(intent);
         }
+    }
+
+    /**
+     * 重新提交失败出入仓单
+     * @param context
+     */
+    public static void resubmitFailStock(Context context) {
+        List<TrainsInfo> list = new ArrayList<>();
+        try {
+            List<TrainsInfo> all = TMSApplication.db.selector(TrainsInfo.class).findAll();
+            if (all != null) {
+                if (all.size() > 0) {
+                    for (TrainsInfo info : all) {
+                        list.add(info);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "获取结算信息異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+        }
+
+        int failNum = 0;
+        for (TrainsInfo info : list) {
+            if (info.getTodayDepositStatus() != 1 || info.getTodayRefundStatus() != 1) {
+                failNum ++;
+            }
+        }
+
+        if (failNum > 0) {
+            Intent intent = new Intent(context, SubmitFailStockIntentService.class);
+            context.startService(intent);
+        }
+    }
+
+    /**
+     * 失敗訂單數量
+     * @param context
+     */
+    public static int selectFailOrderCount(Context context) {
+        List<SubmitInvoiceInfo> list = new ArrayList<>();
+        List<SubmitInvoiceInfo> all = null;
+        int failNum = 0;
+        try {
+            all = TMSApplication.db.selector(SubmitInvoiceInfo.class).findAll();
+            if (all != null) {
+                if (all.size() > 0) {
+                    for (SubmitInvoiceInfo info : all) {
+                        list.add(info);
+                    }
+                }
+            }
+
+            for (SubmitInvoiceInfo info : list) {
+                if (info.getRefundStatus() != 1 || info.getDepositStatus() != 1) {
+                    failNum ++;
+                }
+            }
+
+        } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+        }
+        return failNum;
+    }
+
+    /**
+     * 失敗出入倉單數量
+     * @param context
+     */
+    public static int selectFailStockCount(Context context) {
+        int failNum = 0;
+        List<TrainsInfo> list = new ArrayList<>();
+        try {
+            List<TrainsInfo> all = TMSApplication.db.selector(TrainsInfo.class).findAll();
+            if (all != null) {
+                if (all.size() > 0) {
+                    for (TrainsInfo info : all) {
+                        list.add(info);
+                    }
+                }
+            }
+
+            for (TrainsInfo info : list) {
+                if (info.getTodayDepositStatus() != 1 || info.getTodayRefundStatus() != 1) {
+                    failNum ++;
+                }
+            }
+
+        } catch (Exception e) {
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "获取结算信息異常信息：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+        }
+
+        return failNum;
     }
 
     /**
@@ -1191,6 +1283,21 @@ public class TMSCommonUtils {
     }
 
     /**
+     * 提取stackArray中的錯誤信息
+     * @param e
+     * @return
+     */
+    public static String getStackMsg(Exception e) {
+        StringBuffer sb = new StringBuffer();
+        StackTraceElement[] stackArray = e.getStackTrace();
+        for (int i = 0; i < stackArray.length; i++) {
+            StackTraceElement element = stackArray[i];
+            sb.append(element.toString() + "\n");
+        }
+        return sb.toString();
+    }
+
+    /**
      * 删除相对路径
      * */
     public static void deletePath() {
@@ -1264,6 +1371,7 @@ public class TMSCommonUtils {
             RandomAccessFile raf = new RandomAccessFile(file, "rwd");
             raf.seek(file.length());
             raf.write(strContent.getBytes());
+            
             raf.close();
         } catch (Exception e) {
             Log.e("TestFile", "Error on write File:" + e);

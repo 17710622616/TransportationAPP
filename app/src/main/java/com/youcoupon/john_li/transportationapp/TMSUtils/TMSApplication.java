@@ -44,7 +44,7 @@ public class TMSApplication extends Application {
      */
     public static DbManager.DaoConfig daoConfig = new DbManager.DaoConfig()
             //设置数据库名，默认xutils.db
-            .setDbName("psaformaterial.db")
+            .setDbName("psaformaterial1.db")
             //设置数据库路径，默认存储在app的私有目录
             .setDbDir(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder"))
             //设置数据库的版本号

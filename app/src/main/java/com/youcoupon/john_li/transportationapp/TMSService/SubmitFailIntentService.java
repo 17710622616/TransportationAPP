@@ -242,14 +242,10 @@ public class SubmitFailIntentService extends IntentService
                     invoiceResult = invoiceResult - 1;
                     if (type == 0) {
                         try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo));
+                            //TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo));
+                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=", mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo),new KeyValue("depositStatus", 1));
                         } catch (DbException e) {
-                            e.printStackTrace();
-                        }
-
-                        try {
-                            TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 1));
-                        } catch (DbException e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "修改发票号码1：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     } else {
@@ -257,6 +253,7 @@ public class SubmitFailIntentService extends IntentService
                             try {
                                 TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("invoice_no", orderNo));
                             } catch (DbException e) {
+                                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "修改发票号码2：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                                 e.printStackTrace();
                             }
                         }
@@ -264,6 +261,7 @@ public class SubmitFailIntentService extends IntentService
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 1));
                         } catch (DbException e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "修改发票号码4：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     }
@@ -273,17 +271,20 @@ public class SubmitFailIntentService extends IntentService
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 2));
                         } catch (DbException e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "錯誤信息，修改发票号码5：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     } else {
                         try {
                             TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 2));
                         } catch (DbException e) {
+                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "錯誤信息，修改发票号码6：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                             e.printStackTrace();
                         }
                     }
                     Toast.makeText(SubmitFailIntentService.this, "提交發票失敗！" + data, Toast.LENGTH_SHORT).show();
                 }
+                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "重新提交成功，提交發票返回信息9：\n" + new Gson().toJson(commonModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             }
 
             @Override
@@ -292,12 +293,16 @@ public class SubmitFailIntentService extends IntentService
                     try {
                         TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("depositStatus", 2));
                     } catch (DbException e) {
+                        TMSCommonUtils.writeTxtToFile(
+                                TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码7：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                         e.printStackTrace();
                     }
                 } else {
                     try {
-                        TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("refrence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 2));
+                        TMSApplication.db.update(SubmitInvoiceInfo.class, WhereBuilder.b().and("ref" +
+                                "rence","=",mSubmitInvoiceInfo.getRefrence()),new KeyValue("refundStatus", 2));
                     } catch (DbException e) {
+                        TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，修改发票号码8：" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
                         e.printStackTrace();
                     }
                 }
@@ -306,6 +311,8 @@ public class SubmitFailIntentService extends IntentService
                 } else {
                     Toast.makeText(SubmitFailIntentService.this, "提交發票失敗！", Toast.LENGTH_SHORT).show();
                 }
+
+                TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息，提交發票返回異常9：" + ex.getMessage() + "\n" +ex.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
 
                 /*try {
                     // 计数重新提交队列不可超过5条
@@ -349,6 +356,8 @@ public class SubmitFailIntentService extends IntentService
                 } catch (Exception exc) {
                     exc.printStackTrace();
                 }
+
+                EventBus.getDefault().post("REFRESH_BUSINESS");
             }
         });
     }

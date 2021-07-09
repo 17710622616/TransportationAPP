@@ -51,6 +51,7 @@ public class MainAdapter extends BaseAdapter {
                 holder = new MainAdapter.ViewHolder();
                 convertView = inflater.inflate(R.layout.item_main_menu, null);
                 holder.text = convertView.findViewById(R.id.item_main_tv);
+                holder.item_main_fail_tv = convertView.findViewById(R.id.item_main_fail_tv);
                 holder.warmingIv = convertView.findViewById(R.id.item_main_warming_iv);
                 convertView.setTag(holder);
             } else {
@@ -68,7 +69,27 @@ public class MainAdapter extends BaseAdapter {
                 } else {
                     holder.warmingIv.setVisibility(View.GONE);
                 }
-            } else {
+                holder.item_main_fail_tv.setVisibility(View.GONE);
+            } else if (list.get(i).equals("業務審核")) {
+                int count = TMSCommonUtils.selectFailOrderCount(mContext);
+                if (count == 0) {
+                    holder.item_main_fail_tv.setVisibility(View.GONE);
+                } else {
+                    holder.item_main_fail_tv.setVisibility(View.VISIBLE);
+                    holder.item_main_fail_tv.setText(String.valueOf(count));
+                }
+                holder.warmingIv.setVisibility(View.GONE);
+            }  else if (list.get(i).equals("物料結算")) {
+                int count = TMSCommonUtils.selectFailStockCount(mContext);
+                if (count == 0) {
+                    holder.item_main_fail_tv.setVisibility(View.GONE);
+                } else {
+                    holder.item_main_fail_tv.setVisibility(View.VISIBLE);
+                    holder.item_main_fail_tv.setText(String.valueOf(count));
+                }
+                holder.warmingIv.setVisibility(View.GONE);
+            } else{
+                holder.item_main_fail_tv.setVisibility(View.GONE);
                 holder.warmingIv.setVisibility(View.GONE);
             }
             return convertView;
@@ -76,6 +97,7 @@ public class MainAdapter extends BaseAdapter {
 
     class ViewHolder {
         private TextView text;
+        private TextView item_main_fail_tv;
         private ImageView warmingIv;
     }
 

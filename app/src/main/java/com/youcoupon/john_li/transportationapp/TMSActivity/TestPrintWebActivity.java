@@ -222,7 +222,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 mViewList.add(sunWebview);
             }*/
             // 2021-06-01会议后修改单据格式，仅打印一张客戶物料回收單
-            url = "file:///" + testCreateHTML("", true);
+            url = "file:///" + testCreateHTML();
             webview.loadUrl(url);
             mViewList.add(webview);
 
@@ -256,7 +256,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 url = "file:///" + testCreateHTML("");// 载入本地生成的页面
             }*/
         } catch (Exception e) {
-            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.initData():" + e.getStackTrace().toString() + "\n" + e.getMessage().toString(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.initData():" + e.getStackTrace().toString() + "\n" + e.getMessage().toString(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             Log.d("訂單查詢失敗", "訂單查詢失敗" + String.valueOf(e.getStackTrace()));
             Toast.makeText(this, "訂單查詢失敗！" + String.valueOf(e.getStackTrace()), Toast.LENGTH_SHORT).show();
         }
@@ -294,11 +294,11 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 customerName = customerInfo.getCustomerName();
             }
         } catch (Exception e) {
-            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.testCreateHTML():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.testCreateHTML():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             e.printStackTrace();
         }
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();
-        ToHtml.convertOneSheet(mSubmitInvoiceInfo.getInvoiceNo(), mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, this);
+        ToHtml.convertOneSheet(mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, this);
         //ToHtml.convert(mSubmitInvoiceInfo.getInvoiceNo(),mSubmitInvoiceInfo.getRefrence(), mSubmitInvoiceInfo.getCustomerID(), mSubmitInvoiceInfo.getCustomerName(), path, mDeliverInvoiceModelList, barCodeImagePath, this);
         return path;
     }
@@ -319,7 +319,7 @@ public class TestPrintWebActivity extends BaseActivity implements View.OnClickLi
                 customerName = customerInfo.getCustomerName();
             }
         } catch (Exception e) {
-            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.testCreateHTML():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
+            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "異常信息：TestPrintWebActivity.testCreateHTML():" + e.getStackTrace(), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Eoor");
             e.printStackTrace();
         }
         String path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), System.currentTimeMillis() + ".html").getPath();

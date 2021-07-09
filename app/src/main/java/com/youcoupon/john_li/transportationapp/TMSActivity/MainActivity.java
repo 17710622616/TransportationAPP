@@ -56,6 +56,8 @@ import com.youcoupon.john_li.transportationapp.TMSUtils.TMSShareInfo;
 import com.youcoupon.john_li.transportationapp.TMSService.TimingPositionService;
 import com.youcoupon.john_li.transportationapp.TMSView.TMSHeadView;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.xutils.common.Callback;
 import org.xutils.common.util.KeyValue;
 import org.xutils.db.sqlite.WhereBuilder;
@@ -161,6 +163,9 @@ public class MainActivity extends BaseActivity {
 
         // 清楚一个星期前的定位数据
         TMSCommonUtils.deleteSevenDaysAgoPosition();
+
+        // 註冊eventbus
+        EventBus.getDefault().register(this);
 
         // 检查登录状态及更新状态
         updateStatus = new HashMap<>();
@@ -352,7 +357,8 @@ public class MainActivity extends BaseActivity {
                         if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
                             showUpdateDialog();
                         } else {
-                            reUploadPhoto();
+                            //reUploadPhoto();
+                            reUploadBusiness();
                         }
                         break;
                     case 7:
@@ -365,7 +371,8 @@ public class MainActivity extends BaseActivity {
                         break;
                     case 8:
                         if (TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("D") || TMSShareInfo.mUserModelList.get(0).getID().substring(0,1).equals("d")) {
-                            reUploadPhoto();
+                            //reUploadPhoto();
+                            reUploadBusiness();
                         } else {
                             loginOut();
                         }
@@ -410,16 +417,21 @@ public class MainActivity extends BaseActivity {
         menuList.add("切換公司");
         menuList.add("數據更新");
         menuList.add("OK簽到");
-        menuList.add("重交相片");
+        menuList.add("重交業務");
         menuList.add("登出");
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+        headView.setRightTextEnable();
+    }
     /**
      * 清空过往数据
      */
     private void clearDBData() {
         try {
-
             TMSApplication.db.delete(TrainsInfo.class);
             TMSApplication.db.delete(SubmitInvoiceInfo.class); //child_info表中数据将被全部删除
             TMSApplication.db.delete(MaterialNumberInfo.class); //child_info表中数据将被全部删除
@@ -1206,6 +1218,9 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    /**
+     * 重交照片
+     */
     private void reUploadPhoto() {
         // 加入IntentService队列
         try {
@@ -1220,6 +1235,33 @@ public class MainActivity extends BaseActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 重交業務，重新提交所有失敗數據
+     */
+    private void reUploadBusiness() {
+        new AlertDialog.Builder(MainActivity.this)
+                .setTitle("系統提示")
+                .setMessage("您將重新提交所有失敗的數據，五分鐘內重複提交僅第一次生效，請確認!")
+                .setNeutralButton("取消",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // 啟動更新界面
+                                dialog.dismiss();
+                            }
+                        })
+                .setPositiveButton("確定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        TMSCommonUtils.resubmitFailOrder(MainActivity.this);
+                        TMSCommonUtils.resubmitFailStock(MainActivity.this);
+                    }
+                })
+                .create()
+                .show();
     }
 
     private void loginOut() {
@@ -1528,7 +1570,7 @@ public class MainActivity extends BaseActivity {
 
                                         } catch (Exception e) {
                                             e.printStackTrace();
-                                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "拉取發票信息異常：" + e.getStackTrace() + "\n" + new Gson().toJson(pullInvoiceModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder").getPath(), TMSCommonUtils.getTimeToday() + "Error");
+                                            TMSCommonUtils.writeTxtToFile(TMSCommonUtils.getTimeNow() + "拉取發票信息異常：" + e.getStackTrace() + "\n" + new Gson().toJson(pullInvoiceModel), new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "TMSFolder/Event/").getPath(), TMSCommonUtils.getTimeToday() + "Error");
                                         }
                                     }
 
@@ -1783,5 +1825,12 @@ public class MainActivity extends BaseActivity {
             return true;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Subscribe
+    public void onEvent(String msg){
+        if (msg.equals("REFRESH_BUSINESS")) {
+            mAdapter.notifyDataSetChanged();
+        }
     }
 }
